@@ -28,5 +28,6 @@ class User:
             if user.email == email and user.check_password(password):
                 print(f"Connexion réussie pour {user.first_name} {user.name}")
                 return True
-        print("Echec de la connexion : Email ou mot de passe incorrect.")
-        return False
+            else:
+                print("Echec de la connexion : Email ou mot de passe incorrect.")
+                return False
