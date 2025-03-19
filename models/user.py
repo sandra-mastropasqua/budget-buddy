@@ -115,7 +115,7 @@ class User:
                 connection.close()
 
     def authenticate(email: str, password: str):
-        """Vérifie si l'email et le mot de passe correspondent à un utilisateur en base."""
+        """Compares email and password with database."""
         connection = None
         try:
             connection = mysql.connector.connect(
@@ -130,9 +130,9 @@ class User:
             user = cursor.fetchone()
 
             if user and bcrypt.checkpw(password.encode('utf-8'), user["password"].encode('utf-8')):
-                return user  # Retourne l'utilisateur si l'authentification est réussie
+                return user  # Returns user if login succeed
             else:
-                return None  # Retourne None si les identifiants sont incorrects
+                return None  # Returns None if login wrong
 
         except mysql.connector.Error as err:
             print(f"Erreur MySQL : {err}")
