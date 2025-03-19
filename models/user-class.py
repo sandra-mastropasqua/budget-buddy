@@ -27,7 +27,7 @@ class User:
             connection = mysql.connector.connect(
                 host="localhost",
                 user="root",  # Remplace par ton utilisateur MySQL
-                password="YoelIT2024!"  # Remplace par ton mot de passe MySQL
+                password="pipicaca"  # Remplace par ton mot de passe MySQL
             )
             cursor = connection.cursor()
 
@@ -71,7 +71,7 @@ class User:
             connection = mysql.connector.connect(
                 host="localhost",
                 user="root",  # Remplace par ton utilisateur MySQL
-                password="YoelIT2024!",  # Remplace par ton mot de passe MySQL
+                password="pipicaca",  # Remplace par ton mot de passe MySQL
                 database="budget_buddy"
             )
             cursor = connection.cursor()
@@ -106,7 +106,7 @@ class User:
             connection = mysql.connector.connect(
                 host="localhost",
                 user="root",  # Remplace par ton utilisateur MySQL
-                password="YoelIT2024!",  # Remplace par ton mot de passe MySQL
+                password="pipicaca",  # Remplace par ton mot de passe MySQL
                 database="budget_buddy"
             )
             cursor = connection.cursor()

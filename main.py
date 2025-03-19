@@ -1,5 +1,5 @@
 import tkinter as tk
-from account import Account
+from models.account_class import Account
 import mysql.connector
 
 # Connexion à la base de données
@@ -7,7 +7,7 @@ def connect_db():
     return mysql.connector.connect(
         host="localhost",
         user="root",
-        password="pipicaca",  
+        password="pipicaca",
         database="budget_buddy"
     )
 
