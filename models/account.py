@@ -3,13 +3,13 @@ import random
 
 class Account:
     def __init__(self, account_id):
-        """Initialise un compte avec son ID."""
+        """Initializes an account with its ID."""
         self.id = account_id
         self.balance = self.get_balance()
 
     @staticmethod
-    def create_account(user_id, account_type='courant') -> int:
-        """Crée un compte bancaire pour un utilisateur."""
+    def create_account(user_id) -> int:
+        """Creates a bank account."""
         connection = None
         try:
             connection = mysql.connector.connect(
@@ -23,16 +23,15 @@ class Account:
             account_number = f"BB-{random.randint(1000, 9999)}"
 
             cursor.execute("""
-            INSERT INTO accounts (user_id, account_number, account_type)
-            VALUES (%s, %s, %s);
-            """, (user_id, account_number, account_type))
+            INSERT INTO accounts (user_id, account_number)
+            VALUES (%s, %s);
+            """, (user_id, account_number))
 
             connection.commit()
-            print(f"Compte {account_number} créé avec succès.")
             return cursor.lastrowid
 
         except mysql.connector.Error as err:
-            print(f"Erreur MySQL lors de la création du compte : {err}")
+            print(f"Error MySQL : {err}")
             return None
         finally:
             if connection and connection.is_connected():
@@ -40,7 +39,7 @@ class Account:
                 connection.close()
 
     def get_balance(self):
-        """Récupère le solde du compte."""
+        """Get the account balance."""
         connection = mysql.connector.connect(
             host="localhost",
             user="root",
@@ -55,7 +54,7 @@ class Account:
         return result[0] if result else 0
 
     def update_balance(self, new_balance):
-        """Met à jour le solde du compte."""
+        """Update the account balance."""
         connection = mysql.connector.connect(
             host="localhost",
             user="root",
@@ -70,20 +69,20 @@ class Account:
         self.balance = new_balance
 
     def credit(self, amount):
-        """Ajoute un montant au solde."""
+        """Add an amount to the account."""
         self.update_balance(self.balance + amount)
 
     def debit(self, amount):
-        """Débite un montant si le solde est suffisant."""
+        """Debits an amount if the balance is sufficient."""
         if self.balance >= amount:
             self.update_balance(self.balance - amount)
         else:
-            raise ValueError("Fonds insuffisants")
+            raise ValueError("Insufficient funds.")
 
     def transfer(self, destination_account_id, amount):
-        """Transfère un montant à un autre compte."""
+        """Transfer an amount to another account."""
         if self.balance < amount:
-            raise ValueError("Fonds insuffisants")
+            raise ValueError("Insufficient funds.")
 
         connection = mysql.connector.connect(
             host="localhost",
@@ -97,7 +96,7 @@ class Account:
         destination = cursor.fetchone()
 
         if not destination:
-            raise ValueError("Le compte destinataire n'existe pas")
+            raise ValueError("The recipient account does not exist.")
 
         new_source_balance = self.balance - amount
         new_dest_balance = destination[0] + amount

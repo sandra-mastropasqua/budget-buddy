@@ -1,6 +1,7 @@
 import mysql.connector
 import bcrypt
 import random
+from datetime import datetime
 
 class User:
     def __init__(self, id: int, first_name: str, last_name: str, email: str, password: str):
@@ -53,8 +54,19 @@ class User:
             );
             """)
 
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS transactions (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                description VARCHAR(255) NOT NULL,
+                amount DECIMAL(10, 2) NOT NULL,
+                date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            );
+            """)
+
             connection.commit()
-            print("Database successfully creates.")
+            print("Database successfully created.")
 
         except mysql.connector.Error as err:
             print(f"Erreur MySQL : {err}")
@@ -94,116 +106,6 @@ class User:
                 cursor.close()
                 connection.close()
 
-
-class Account:
-    def __init__(self, account_id):
-        """Initializes an account with its ID."""
-        self.id = account_id
-        self.balance = self.get_balance()
-
-    @staticmethod
-    def create_account(user_id) -> int:
-        """Creates a bank account."""
-        connection = None
-        try:
-            connection = mysql.connector.connect(
-                host="localhost",
-                user="root",
-                password="YoelIT2024!",
-                database="budget_buddy"
-            )
-            cursor = connection.cursor()
-
-            account_number = f"BB-{random.randint(1000, 9999)}"
-
-            cursor.execute("""
-            INSERT INTO accounts (user_id, account_number)
-            VALUES (%s, %s);
-            """, (user_id, account_number))
-
-            connection.commit()
-            return cursor.lastrowid
-
-        except mysql.connector.Error as err:
-            print(f"Error MySQL : {err}")
-            return None
-        finally:
-            if connection and connection.is_connected():
-                cursor.close()
-                connection.close()
-
-    def get_balance(self):
-        """Get the account balance."""
-        connection = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="YoelIT2024!",
-            database="budget_buddy"
-        )
-        cursor = connection.cursor()
-        cursor.execute("SELECT balance FROM accounts WHERE id = %s", (self.id,))
-        result = cursor.fetchone()
-        cursor.close()
-        connection.close()
-        return result[0] if result else 0
-
-    def update_balance(self, new_balance):
-        """Update the account balance."""
-        connection = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="YoelIT2024!",
-            database="budget_buddy"
-        )
-        cursor = connection.cursor()
-        cursor.execute("UPDATE accounts SET balance = %s WHERE id = %s", (new_balance, self.id))
-        connection.commit()
-        cursor.close()
-        connection.close()
-        self.balance = new_balance
-
-    def credit(self, amount):
-        """Add an amount to the account."""
-        self.update_balance(self.balance + amount)
-
-    def debit(self, amount):
-        """Debits an amount if the balance is sufficient."""
-        if self.balance >= amount:
-            self.update_balance(self.balance - amount)
-        else:
-            raise ValueError("Insufficient funds.")
-
-    def transfer(self, destination_account_id, amount):
-        """Transfer an amount to an other account."""
-        if self.balance < amount:
-            raise ValueError("Insufficient funds.")
-
-        connection = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="YoelIT2024!",
-            database="budget_buddy"
-        )
-        cursor = connection.cursor()
-
-        cursor.execute("SELECT balance FROM accounts WHERE id = %s", (destination_account_id,))
-        destination = cursor.fetchone()
-
-        if not destination:
-            raise ValueError("The recipient account does not exist.")
-
-        new_source_balance = self.balance - amount
-        new_dest_balance = destination[0] + amount
-
-        cursor.execute("UPDATE accounts SET balance = %s WHERE id = %s", (new_source_balance, self.id))
-        cursor.execute("UPDATE accounts SET balance = %s WHERE id = %s", (new_dest_balance, destination_account_id))
-        connection.commit()
-
-        cursor.close()
-        connection.close()
-        self.balance = new_source_balance
-
-
 # ✅ TESTS
 if __name__ == "__main__":
     User.create_database_and_tables()
@@ -213,24 +115,45 @@ if __name__ == "__main__":
     if user_id:
         print(f"Utilisateur Guillaume créé avec ID {user_id}")
 
+    # 2️⃣ Test Crédit et Débit sur le compte
     account_id = Account.create_account(user_id)
     if account_id:
         print(f"Compte créé avec ID {account_id}")
 
-    # 2️⃣ Test Crédit et Débit
     account = Account(account_id)
     print(f"Solde initial : {account.balance}€")
-    
+
+    # Test Crédit
     account.credit(100)
     print(f"Solde après crédit de 100€ : {account.balance}€")
 
+    # Test Débit
     account.debit(50)
     print(f"Solde après débit de 50€ : {account.balance}€")
 
-    # 3️⃣ Test Transfert
+    # 3️⃣ Test Transfert entre comptes
     recipient_id = Account.create_account(user_id)
     recipient_account = Account(recipient_id)
     account.transfer(recipient_id, 30)
 
     print(f"Solde après transfert : {account.balance}€")
     print(f"Solde du destinataire après réception : {recipient_account.get_balance()}€")
+
+    # 4️⃣ Test des Transactions
+    print("\nTest des transactions:")
+
+    # Créer une transaction pour un crédit
+    transaction_credit = Transaction.create_transaction(user_id, "Crédit de 100€", 100.00)
+    if transaction_credit:
+        print(f"Transaction crédit créée : {transaction_credit}")
+
+    # Créer une transaction pour un débit
+    transaction_debit = Transaction.create_transaction(user_id, "Débit de 50€", -50.00)
+    if transaction_debit:
+        print(f"Transaction débit créée : {transaction_debit}")
+
+    # Afficher toutes les transactions pour l'utilisateur
+    transactions = Transaction.get_transactions(user_id)
+    print("\nToutes les transactions de l'utilisateur :")
+    for t in transactions:
+        print(t)
