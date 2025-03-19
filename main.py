@@ -1,5 +1,5 @@
 import tkinter as tk
-from account import Account
+from models.account import Account
 import mysql.connector
 
 # Connexion à la base de données
