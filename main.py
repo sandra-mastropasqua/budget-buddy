@@ -1,8 +1,9 @@
 import tkinter as tk
 from models.account_class import Account
+from models.user_class import User
 import mysql.connector
 
-# Connexion à la base de données
+
 def connect_db():
     return mysql.connector.connect(
         host="localhost",
