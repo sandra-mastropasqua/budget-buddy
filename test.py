@@ -54,4 +54,4 @@ if __name__ == "__main__":
     transactions = Transaction.get_transactions(user_id)
     print("\nToutes les transactions de l'utilisateur :")
     for t in transactions:
-        print(t)
+        print(t) 
