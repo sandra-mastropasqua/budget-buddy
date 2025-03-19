@@ -3,7 +3,6 @@ from models.account_class import Account
 from models.user_class import User
 import mysql.connector
 
-
 def connect_db():
     return mysql.connector.connect(
         host="localhost",
@@ -17,7 +16,7 @@ root.geometry('400x200')
 root.title("Dashboard")
 
 db = connect_db()
-account_id = 1 
+account_id = 1
 account = Account(db, account_id)
 
 balance_label = tk.Label(root, text=f"Balance: {account.balance} €", font=("Arial", 16))
