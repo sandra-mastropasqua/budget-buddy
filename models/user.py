@@ -1,7 +1,17 @@
 import mysql.connector
 import bcrypt
 import random
-from datetime import datetime
+from dotenv import load_dotenv
+import os
+
+# Charger les variables d'environnement depuis le fichier .env
+load_dotenv()
+
+# Récupérer les informations depuis les variables d'environnement
+DB_HOST = os.getenv("DB_HOST")
+DB_USER = os.getenv("DB_USER")
+DB_PASSWORD = os.getenv("DB_PASSWORD")
+DB_NAME = os.getenv("DB_NAME")
 
 class User:
     def __init__(self, id: int, first_name: str, last_name: str, email: str, password: str):
@@ -25,14 +35,14 @@ class User:
         connection = None
         try:
             connection = mysql.connector.connect(
-                host="localhost",
-                user="root",
-                password="YoelIT2024!"
+                host=DB_HOST,
+                user=DB_USER,
+                password=DB_PASSWORD
             )
             cursor = connection.cursor()
 
-            cursor.execute("CREATE DATABASE IF NOT EXISTS budget_buddy")
-            cursor.execute("USE budget_buddy")
+            cursor.execute("CREATE DATABASE IF NOT EXISTS " + DB_NAME)
+            cursor.execute("USE " + DB_NAME)
 
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS users (
@@ -54,17 +64,6 @@ class User:
             );
             """)
 
-            cursor.execute("""
-            CREATE TABLE IF NOT EXISTS transactions (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                user_id INT NOT NULL,
-                description VARCHAR(255) NOT NULL,
-                amount DECIMAL(10, 2) NOT NULL,
-                date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-            );
-            """)
-
             connection.commit()
             print("Database successfully created.")
 
@@ -81,10 +80,10 @@ class User:
         connection = None
         try:
             connection = mysql.connector.connect(
-                host="localhost",
-                user="root",
-                password="YoelIT2024!",
-                database="budget_buddy"
+                host=DB_HOST,
+                user=DB_USER,
+                password=DB_PASSWORD,
+                database=DB_NAME
             )
             cursor = connection.cursor()
 

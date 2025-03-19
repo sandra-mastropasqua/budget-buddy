@@ -1,6 +1,14 @@
 import mysql.connector
 from mysql.connector import errorcode
 from datetime import datetime
+from dotenv import load_dotenv
+import os
+load_dotenv()
+
+DB_HOST = os.getenv("DB_HOST")
+DB_USER = os.getenv("DB_USER")
+DB_PASSWORD = os.getenv("DB_PASSWORD")
+DB_NAME = os.getenv("DB_NAME")
 
 class Transaction:
     def __init__(self, id: int, user_id: int, description: str, amount: float, date: str):
@@ -16,10 +24,10 @@ class Transaction:
         connection = None
         try:
             connection = mysql.connector.connect(
-                host="localhost",
-                user="root",
-                password="YoelIT2024!",
-                database="budget_buddy"
+                host=DB_HOST,
+                user=DB_USER,
+                password=DB_PASSWORD,
+                database=DB_NAME
             )
             cursor = connection.cursor()
 
@@ -45,10 +53,10 @@ class Transaction:
         connection = None
         try:
             connection = mysql.connector.connect(
-                host="localhost",
-                user="root",
-                password="YoelIT2024!",
-                database="budget_buddy"
+                host=DB_HOST,
+                user=DB_USER,
+                password=DB_PASSWORD,
+                database=DB_NAME
             )
             cursor = connection.cursor()
 
