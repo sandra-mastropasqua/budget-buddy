@@ -1,6 +1,7 @@
 import customtkinter as ctk
 from models.account import Account
 from models.transaction import Transaction
+from models.user import User
 
 class Dashboard(ctk.CTk):
     def __init__(self, user_id):
@@ -8,6 +9,14 @@ class Dashboard(ctk.CTk):
         self.user_id = user_id
 
         self.title("Budget Buddy - Dashboard")
+        # Retrieve user information
+        user = User.get_user_by_id(user_id)
+        full_name = f"{user['firstname']} {user['lastname']}" if user else "Utilisateur inconnu"
+
+        # Display the user's name
+        self.user_label = ctk.CTkLabel(self, text=f"Hello, {full_name} 👋", font=("Arial", 18))
+        self.user_label.pack(pady=10)
+
         self.geometry("600x500")
         self.resizable(False, False)
 
@@ -61,7 +70,7 @@ class Dashboard(ctk.CTk):
 
     def logout(self):
         """Returns to the login screen."""
-        from views.app import BudgetBuddyApp  # ✅ Moved import here to avoid circular dependency
+        from views.app import BudgetBuddyApp
         self.destroy()
         app = BudgetBuddyApp()
         app.mainloop()

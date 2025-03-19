@@ -26,6 +26,25 @@ class User:
     def check_password(self, password: str) -> bool:
         """Check if the password fits with the hash one."""
         return bcrypt.checkpw(password.encode('utf-8'), self.__password.encode('utf-8'))
+    
+    @staticmethod
+    def get_user_by_id(user_id):
+        """Retrieve user details from database."""
+        connection = mysql.connector.connect(
+            host=DB_HOST,
+            user=DB_USER,
+            password=DB_PASSWORD,
+            database=DB_NAME
+        )
+        cursor = connection.cursor(dictionary=True)
+
+        cursor.execute("SELECT firstname, lastname FROM users WHERE id = %s", (user_id,))
+        user = cursor.fetchone()
+
+        cursor.close()
+        connection.close()
+        return user
+
 
     @staticmethod
     def create_database_and_tables():
