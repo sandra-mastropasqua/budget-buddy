@@ -21,6 +21,9 @@ class BudgetBuddyApp(ctk.CTk):
         self.logo_label = ctk.CTkLabel(self, image=self.logo, text="")
         self.logo_label.pack(pady=10)
 
+        ctk.set_default_color_theme("dark-blue")
+        ctk.set_appearance_mode("light")
+
         self.label_title = ctk.CTkLabel(self, text="Budget Buddy", font=("Arial", 24))
         self.label_title.pack(pady=20)
 

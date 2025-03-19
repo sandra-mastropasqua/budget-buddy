@@ -17,6 +17,9 @@ class Dashboard(ctk.CTk):
         self.user_label = ctk.CTkLabel(self, text=f"Hello, {full_name} 👋", font=("Arial", 18))
         self.user_label.pack(pady=10)
 
+        ctk.set_default_color_theme("dark-blue")
+        ctk.set_appearance_mode("light")
+
         self.geometry("600x500")
         self.resizable(False, False)
 

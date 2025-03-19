@@ -1,5 +1,4 @@
 import mysql.connector
-from mysql.connector import errorcode
 from datetime import datetime
 from dotenv import load_dotenv
 import os
@@ -30,7 +29,7 @@ class Transaction:
                 database=DB_NAME
             )
             cursor = connection.cursor()
-
+            transaction_date = datetime.now()
             cursor.execute("""
             INSERT INTO transactions (user_id, description, amount)
             VALUES (%s, %s, %s);
