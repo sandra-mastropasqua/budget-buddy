@@ -3,11 +3,8 @@ import bcrypt
 import random
 from dotenv import load_dotenv
 import os
-
-# Charger les variables d'environnement depuis le fichier .env
 load_dotenv()
 
-# Récupérer les informations depuis les variables d'environnement
 DB_HOST = os.getenv("DB_HOST")
 DB_USER = os.getenv("DB_USER")
 DB_PASSWORD = os.getenv("DB_PASSWORD")

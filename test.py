@@ -8,50 +8,49 @@ from mysql.connector import Error
 if __name__ == "__main__":
     User.create_database_and_tables()
 
-    # 1️⃣ Création d'un utilisateur et d'un compte
+    # 1️⃣ Create an user account
     user_id = User.create_user("Guillaume", "Nurdin", "guillaume.nurdin@example.com", "secure123")
     if user_id:
-        print(f"Utilisateur Guillaume créé avec ID {user_id}")
+        print(f"User successfully created {user_id}")
 
-    # 2️⃣ Test Crédit et Débit sur le compte
+    # 2️⃣ Test credit and debits on the account
     account_id = Account.create_account(user_id)
     if account_id:
-        print(f"Compte créé avec ID {account_id}")
+        print(f"Account created with an ID {account_id}")
 
     account = Account(account_id)
-    print(f"Solde initial : {account.balance}€")
+    print(f"Initial amount : {account.balance}€")
 
-    # Test Crédit
+    # Test Credit
     account.credit(100)
-    print(f"Solde après crédit de 100€ : {account.balance}€")
+    print(f"Amount after the credit 100€ : {account.balance}€")
 
-    # Test Débit
+    # Test Debit
     account.debit(50)
-    print(f"Solde après débit de 50€ : {account.balance}€")
+    print(f"Amount after the debit 50€ : {account.balance}€")
 
-    # 3️⃣ Test Transfert entre comptes
+    # 3️⃣ Test Transfer between accounts
     recipient_id = Account.create_account(user_id)
     recipient_account = Account(recipient_id)
     account.transfer(recipient_id, 30)
 
-    print(f"Solde après transfert : {account.balance}€")
-    print(f"Solde du destinataire après réception : {recipient_account.get_balance()}€")
+    print(f"Amount after tranfer : {account.balance}€")
+    print(f"Recipient's balance after receipt : {recipient_account.get_balance()}€")
 
-    # 4️⃣ Test des Transactions
-    print("\nTest des transactions:")
+    # 4️⃣ Test Transactions
+    print("\nTest of the transactions:")
 
-    # Créer une transaction pour un crédit
-    transaction_credit = Transaction.create_transaction(user_id, "Crédit de 100€", 100.00)
+    # Create a transaction for a debit
+    transaction_credit = Transaction.create_transaction(user_id, "Credit of 100€", 100.00)
     if transaction_credit:
-        print(f"Transaction crédit créée : {transaction_credit}")
+        print(f"Credit transaction created : {transaction_credit}")
 
-    # Créer une transaction pour un débit
-    transaction_debit = Transaction.create_transaction(user_id, "Débit de 50€", -50.00)
+    transaction_debit = Transaction.create_transaction(user_id, "Debit of 50€", -50.00)
     if transaction_debit:
-        print(f"Transaction débit créée : {transaction_debit}")
+        print(f"Debit transaction created : {transaction_debit}")
 
-    # Afficher toutes les transactions pour l'utilisateur
+    # Print all the transactions for the user
     transactions = Transaction.get_transactions(user_id)
-    print("\nToutes les transactions de l'utilisateur :")
+    print("\nAll the user's transactions :")
     for t in transactions:
         print(t) 
