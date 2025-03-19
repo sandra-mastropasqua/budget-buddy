@@ -1,5 +1,13 @@
 import mysql.connector
 import random
+from dotenv import load_dotenv
+import os
+load_dotenv()
+
+DB_HOST = os.getenv("DB_HOST")
+DB_USER = os.getenv("DB_USER")
+DB_PASSWORD = os.getenv("DB_PASSWORD")
+DB_NAME = os.getenv("DB_NAME")
 
 class Account:
     def __init__(self, account_id):
@@ -13,10 +21,10 @@ class Account:
         connection = None
         try:
             connection = mysql.connector.connect(
-                host="localhost",
-                user="root",
-                password="YoelIT2024!",
-                database="budget_buddy"
+                host=DB_HOST,
+                user=DB_USER,
+                password=DB_PASSWORD,
+                database=DB_NAME
             )
             cursor = connection.cursor()
 
@@ -41,10 +49,10 @@ class Account:
     def get_balance(self):
         """Get the account balance."""
         connection = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="YoelIT2024!",
-            database="budget_buddy"
+            host=DB_HOST,
+            user=DB_USER,
+            password=DB_PASSWORD,
+            database=DB_NAME
         )
         cursor = connection.cursor()
         cursor.execute("SELECT balance FROM accounts WHERE id = %s", (self.id,))
@@ -56,10 +64,10 @@ class Account:
     def update_balance(self, new_balance):
         """Update the account balance."""
         connection = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="YoelIT2024!",
-            database="budget_buddy"
+            host=DB_HOST,
+            user=DB_USER,
+            password=DB_PASSWORD,
+            database=DB_NAME
         )
         cursor = connection.cursor()
         cursor.execute("UPDATE accounts SET balance = %s WHERE id = %s", (new_balance, self.id))
@@ -85,10 +93,10 @@ class Account:
             raise ValueError("Insufficient funds.")
 
         connection = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="YoelIT2024!",
-            database="budget_buddy"
+            host=DB_HOST,
+            user=DB_USER,
+            password=DB_PASSWORD,
+            database=DB_NAME
         )
         cursor = connection.cursor()
 

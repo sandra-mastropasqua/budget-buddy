@@ -2,6 +2,14 @@ import mysql.connector
 import bcrypt
 import random
 from datetime import datetime
+from dotenv import load_dotenv
+import os
+load_dotenv()
+
+DB_HOST = os.getenv("DB_HOST")
+DB_USER = os.getenv("DB_USER")
+DB_PASSWORD = os.getenv("DB_PASSWORD")
+DB_NAME = os.getenv("DB_NAME")
 
 class User:
     def __init__(self, id: int, first_name: str, last_name: str, email: str, password: str):
@@ -25,9 +33,9 @@ class User:
         connection = None
         try:
             connection = mysql.connector.connect(
-                host="localhost",
-                user="root",
-                password="YoelIT2024!"
+                host=DB_HOST,
+                user=DB_USER,
+                password=DB_PASSWORD
             )
             cursor = connection.cursor()
 
@@ -81,10 +89,10 @@ class User:
         connection = None
         try:
             connection = mysql.connector.connect(
-                host="localhost",
-                user="root",
-                password="YoelIT2024!",
-                database="budget_buddy"
+                host=DB_HOST,
+                user=DB_USER,
+                password=DB_PASSWORD,
+                database=DB_NAME
             )
             cursor = connection.cursor()
 
