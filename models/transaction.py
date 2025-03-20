@@ -66,7 +66,7 @@ class Transaction:
             transactions = []
             for row in cursor.fetchall():
                 transactions.append(Transaction(row[0], row[1], row[2], row[3], row[4]))
-
+            print(transactions)
             return transactions
 
         except mysql.connector.Error as err:

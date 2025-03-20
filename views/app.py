@@ -102,3 +102,4 @@ class BudgetBuddyApp(ctk.CTk):
         self.destroy()
         dashboard = Dashboard(user_id)
         dashboard.mainloop()
+
