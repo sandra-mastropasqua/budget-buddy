@@ -2,6 +2,7 @@ import customtkinter as ctk
 from models.account import Account
 from models.transaction import Transaction
 from models.user import User
+from decimal import Decimal
 
 class Dashboard(ctk.CTk):
     def __init__(self, user_id):
@@ -20,7 +21,7 @@ class Dashboard(ctk.CTk):
         ctk.set_default_color_theme("dark-blue")
         ctk.set_appearance_mode("light")
 
-        self.geometry("600x500")
+        self.geometry("600x600")
         self.resizable(False, False)
 
         self.label_title = ctk.CTkLabel(self, text="Dashboard", font=("Arial", 24))
@@ -32,19 +33,22 @@ class Dashboard(ctk.CTk):
         self.transactions_label = ctk.CTkLabel(self, text="Transaction History", font=("Arial", 16))
         self.transactions_label.pack(pady=10)
 
-        self.transactions_list = ctk.CTkTextbox(self, width=500, height=200)
+        self.transactions_list = ctk.CTkTextbox(self, width=500, height=150)
         self.transactions_list.pack(pady=10)
 
-        self.credit_button = ctk.CTkButton(self, text="Credit 100€", command=self.credit)
+        self.amount_entry = ctk.CTkEntry(self, placeholder_text="Amount") 
+        self.amount_entry.pack(pady=5)
+
+        self.credit_button = ctk.CTkButton(self, text="Credit", command=lambda: self.handle_amount("credit"))
         self.credit_button.pack(pady=5)
 
-        self.debit_button = ctk.CTkButton(self, text="Debit 50€", command=self.debit)
+        self.debit_button = ctk.CTkButton(self, text="Debit", command=lambda: self.handle_amount("debit"))
         self.debit_button.pack(pady=5)
-
-        self.update_dashboard()
 
         self.logout_button = ctk.CTkButton(self, text="Logout", command=self.logout)
         self.logout_button.pack(pady=10)
+
+        self.update_dashboard()
 
     def update_dashboard(self):
         """Updates balance and transaction history."""
@@ -57,18 +61,31 @@ class Dashboard(ctk.CTk):
         for t in transactions:
             self.transactions_list.insert("end", f"{t['date']} - {t['description']}: {t['amount']}€\n")
 
-    def credit(self):
-        """Credits 100€ to the account."""
+    def credit(self, amount):
         account = Account.get_account_by_user(self.user_id)
         if account:
-            account.credit(100)
+            account.credit(amount)
             self.update_dashboard()
 
-    def debit(self):
-        """Debits 50€ from the account."""
+    def handle_amount(self, action):
+        try:
+            amount = Decimal(self.amount_entry.get())  # Convertir l'entrée en Decimal
+
+            if action == "credit":
+                self.credit(amount)  # Effectuer un crédit
+            elif action == "debit":
+                self.debit(amount)  # Effectuer un débit
+            else:
+                print("Erreur : action inconnue.")  # Sécurité
+
+        except ValueError:
+            print("Erreur : veuillez entrer un nombre valide.")  # Gestion d'erreur
+
+
+    def debit(self, amount):
         account = Account.get_account_by_user(self.user_id)
         if account:
-            account.debit(50)
+            account.debit(amount)
             self.update_dashboard()
 
     def logout(self):
