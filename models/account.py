@@ -15,7 +15,7 @@ class Account:
             connection = mysql.connector.connect(
                 host="localhost",
                 user="root",
-                password="YoelIT2024!",
+                password="pipicaca",
                 database="budget_buddy"
             )
             cursor = connection.cursor()
@@ -43,7 +43,7 @@ class Account:
         connection = mysql.connector.connect(
             host="localhost",
             user="root",
-            password="YoelIT2024!",
+            password="pipicaca",
             database="budget_buddy"
         )
         cursor = connection.cursor()
@@ -58,7 +58,7 @@ class Account:
         connection = mysql.connector.connect(
             host="localhost",
             user="root",
-            password="YoelIT2024!",
+            password="pipicaca",
             database="budget_buddy"
         )
         cursor = connection.cursor()
@@ -87,7 +87,7 @@ class Account:
         connection = mysql.connector.connect(
             host="localhost",
             user="root",
-            password="YoelIT2024!",
+            password="pipicaca",
             database="budget_buddy"
         )
         cursor = connection.cursor()

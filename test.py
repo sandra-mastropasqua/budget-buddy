@@ -9,7 +9,7 @@ if __name__ == "__main__":
     User.create_database_and_tables()
 
     # 1️⃣ Création d'un utilisateur et d'un compte
-    user_id = User.create_user("Guillaume", "Nurdin", "guillaume.nurdin@example.com", "secure123")
+    user_id = User.create_user("Guillaume", "Nurdin", "guillaume.nur@example.com", "secure123")
     if user_id:
         print(f"Utilisateur Guillaume créé avec ID {user_id}")
 

@@ -27,7 +27,7 @@ class User:
             connection = mysql.connector.connect(
                 host="localhost",
                 user="root",
-                password="YoelIT2024!"
+                password="pipicaca"
             )
             cursor = connection.cursor()
 
@@ -83,7 +83,7 @@ class User:
             connection = mysql.connector.connect(
                 host="localhost",
                 user="root",
-                password="YoelIT2024!",
+                password="pipicaca",
                 database="budget_buddy"
             )
             cursor = connection.cursor()
@@ -105,6 +105,9 @@ class User:
             if connection and connection.is_connected():
                 cursor.close()
                 connection.close()
+
+    def get_id(self):
+        return self.user_id
 
 # ✅ TESTS
 if __name__ == "__main__":

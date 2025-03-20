@@ -18,7 +18,7 @@ class Transaction:
             connection = mysql.connector.connect(
                 host="localhost",
                 user="root",
-                password="YoelIT2024!",
+                password="pipicaca",
                 database="budget_buddy"
             )
             cursor = connection.cursor()
@@ -47,7 +47,7 @@ class Transaction:
             connection = mysql.connector.connect(
                 host="localhost",
                 user="root",
-                password="YoelIT2024!",
+                password="pipicaca",
                 database="budget_buddy"
             )
             cursor = connection.cursor()
