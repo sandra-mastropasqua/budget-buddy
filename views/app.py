@@ -3,6 +3,7 @@ from PIL import Image
 from models.user import User
 from models.account import Account
 from views.dashboard import Dashboard
+import re
 
 class BudgetBuddyApp(ctk.CTk):
     def __init__(self):
@@ -54,12 +55,15 @@ class BudgetBuddyApp(ctk.CTk):
             self.after(1000, lambda: self.open_dashboard(user["id"]))
         else:
             self.message_label.configure(text="Incorrect email or password", text_color="red")
+    
+    
 
     def create_account(self):
         """Displays the account creation window and adds the user to the database."""
         register_window = ctk.CTkToplevel(self)
         register_window.title("Create Account")
         register_window.geometry("400x400")
+        register_window.attributes('-topmost', True)
 
         ctk.CTkLabel(register_window, text="Create Account", font=("Arial", 20)).pack(pady=10)
 
@@ -75,27 +79,53 @@ class BudgetBuddyApp(ctk.CTk):
         password_entry = ctk.CTkEntry(register_window, placeholder_text="Password", show="*")
         password_entry.pack(pady=5)
 
-        def submit_registration():
-            """Submits registration and creates a bank account."""
-            User.create_database_and_tables()
-            first_name = first_name_entry.get()
-            last_name = last_name_entry.get()
-            email = email_entry.get()
-            password = password_entry.get()
+        # ✅ Ajout d'un label pour afficher les messages d'erreur dans `register_window`
+        message_label = ctk.CTkLabel(register_window, text="", text_color="red")
+        message_label.pack(pady=5)
 
+        def submit_registration():
+            """Soumet l'inscription et crée un compte bancaire après validation."""
+            User.create_database_and_tables()
+            first_name = first_name_entry.get().strip()
+            last_name = last_name_entry.get().strip()
+            email = email_entry.get().strip()
+            password = password_entry.get().strip()
+
+            # 🔴 Vérification des champs vides
+            if not all([first_name, last_name, email, password]):
+                message_label.configure(text="Veuillez remplir tous les champs", text_color="red")
+                return
+
+            # 🔎 Vérification du format de l'email (regex)
+            email_regex = r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
+            if not re.match(email_regex, email):
+                message_label.configure(text="Format d'email invalide", text_color="red")
+                return
+
+            # 🔒 Vérification de la sécurité du mot de passe (regex)
+            password_regex = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{10,}$"
+            if not re.match(password_regex, password):
+                message_label.configure(
+                    text="Mot de passe trop faible :\n(Min. 10 caractères, 1 majuscule, 1 minuscule, 1 chiffre, 1 spécial)",
+                    text_color="red"
+                )
+                return
+
+            # ✅ Si tout est bon, créer l'utilisateur
             user_id = User.create_user(first_name, last_name, email, password)
             if user_id:
-                account_id = Account.create_account(user_id)  # Creates an account for the user
+                account_id = Account.create_account(user_id)  # Crée un compte bancaire associé
                 if account_id:
-                    self.message_label.configure(text="Account successfully created!", text_color="green")
-                    register_window.destroy()
+                    message_label.configure(text="Compte créé avec succès !", text_color="green")
+                    register_window.after(1000, register_window.destroy)  # Ferme après 1s
                 else:
-                    self.message_label.configure(text="Error creating bank account", text_color="red")
+                    message_label.configure(text="Erreur lors de la création du compte bancaire", text_color="red")
             else:
-                self.message_label.configure(text="Error creating user account", text_color="red")
+                message_label.configure(text="Erreur lors de la création du compte utilisateur", text_color="red")
 
         submit_button = ctk.CTkButton(register_window, text="Sign Up", command=submit_registration)
         submit_button.pack(pady=10)
+
 
     def open_dashboard(self, user_id):
         """Opens the dashboard interface."""
