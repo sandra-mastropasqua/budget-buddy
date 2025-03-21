@@ -30,6 +30,7 @@ class Transaction:
             )
             cursor = connection.cursor()
             transaction_date = datetime.now()
+            print(f"INSERT INTO transactions: {user_id}, {description}, {amount}")
             cursor.execute("""
             INSERT INTO transactions (user_id, description, amount)
             VALUES (%s, %s, %s);
@@ -66,7 +67,7 @@ class Transaction:
             transactions = []
             for row in cursor.fetchall():
                 transactions.append(Transaction(row[0], row[1], row[2], row[3], row[4]))
-            print(transactions)
+            # print(transactions)
             return transactions
 
         except mysql.connector.Error as err:

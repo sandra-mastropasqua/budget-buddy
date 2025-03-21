@@ -14,11 +14,11 @@ class Dashboard(ctk.CTk):
         self.canvas = None  # ✅ Stocke le graphique
 
         self.title("Budget Buddy - Dashboard")
-        self.geometry("1000x600")  # ✅ Réduit un peu la hauteur pour optimiser l'espace
+        self.geometry("1000x600")
         self.resizable(False, False)
 
         user = User.get_user_by_id(user_id)
-        full_name = f"{user['firstname']} {user['lastname']}" if user else "Utilisateur inconnu"
+        full_name = f"{user['firstname']} {user['lastname']}" if user else "Unknown User"
 
         # ✅ HEADER (Nom de l'utilisateur et solde)
         self.header_frame = ctk.CTkFrame(self)
@@ -30,40 +30,54 @@ class Dashboard(ctk.CTk):
         self.balance_label = ctk.CTkLabel(self.header_frame, text="Balance: 0€", font=("Arial", 18))
         self.balance_label.pack(side="right", padx=10)
 
-        # ✅ CONTENEUR PRINCIPAL (2 colonnes)
-        self.main_frame = ctk.CTkFrame(self)
-        self.main_frame.pack(fill="both", expand=True, padx=10, pady=10)
+        # ✅ Création des onglets
+        self.tabview = ctk.CTkTabview(self)
+        self.tabview.pack(fill="both", expand=True, padx=10, pady=10)
 
-        # ✅ LEFT FRAME - Liste des transactions
-        self.left_frame = ctk.CTkFrame(self.main_frame, width=450)
-        self.left_frame.pack(side="left", fill="both", expand=True, padx=10, pady=10)
+        # ✅ Ajout des onglets
+        self.overview_tab = self.tabview.add("Overview")
+        self.transactions_tab = self.tabview.add("Transactions")
+        self.settings_tab = self.tabview.add("Settings")
 
-        self.transactions_label = ctk.CTkLabel(self.left_frame, text="Historique des Transactions", font=("Arial", 16))
+        # ✅ Configuration des onglets
+        self.setup_overview_tab()
+        self.setup_transactions_tab()
+        self.setup_settings_tab()
+
+        self.update_dashboard()
+
+    def setup_overview_tab(self):
+        """Configuration de l'onglet Aperçu"""
+        self.transactions_label = ctk.CTkLabel(self.overview_tab, text="Transaction History", font=("Arial", 16))
         self.transactions_label.pack(pady=10)
 
-        self.transactions_list = ctk.CTkTextbox(self.left_frame, width=400, height=300)
+        self.transactions_list = ctk.CTkTextbox(self.overview_tab, width=500, height=300)
         self.transactions_list.pack(pady=10)
 
-        # ✅ RIGHT FRAME - Graphique des transactions
-        self.right_frame = ctk.CTkFrame(self.main_frame, width=550)
-        self.right_frame.pack(side="right", fill="both", expand=True, padx=10, pady=10)
+        self.plot_transactions()
 
-        self.update_dashboard()
-        self.plot_transactions()  # ✅ Ajout du graphique
+    def setup_transactions_tab(self):
+        """Configuration de l'onglet Transactions"""
+        ctk.CTkLabel(self.transactions_tab, text="Add a Transaction", font=("Arial", 16)).pack(pady=10)
 
-        self.amount_entry = ctk.CTkEntry(self, placeholder_text="Amount") 
+        self.amount_entry = ctk.CTkEntry(self.transactions_tab, placeholder_text="Amount")
         self.amount_entry.pack(pady=5)
 
-        self.credit_button = ctk.CTkButton(self, text="Credit", command=lambda: self.handle_amount("credit"))
+        self.description_entry = ctk.CTkEntry(self.transactions_tab, placeholder_text="Description")
+        self.description_entry.pack(pady=5)
+
+        self.credit_button = ctk.CTkButton(self.transactions_tab, text="Credit", command=lambda: self.handle_amount("credit"))
         self.credit_button.pack(pady=5)
 
-        self.debit_button = ctk.CTkButton(self, text="Debit", command=lambda: self.handle_amount("debit"))
+        self.debit_button = ctk.CTkButton(self.transactions_tab, text="Debit", command=lambda: self.handle_amount("debit"))
         self.debit_button.pack(pady=5)
 
-        self.logout_button = ctk.CTkButton(self, text="Logout", command=self.logout)
-        self.logout_button.pack(pady=10)
+    def setup_settings_tab(self):
+        """Configuration de l'onglet Paramètres"""
+        ctk.CTkLabel(self.settings_tab, text="Settings", font=("Arial", 16)).pack(pady=10)
 
-        self.update_dashboard()
+        self.logout_button = ctk.CTkButton(self.settings_tab, text="Logout", command=self.logout)
+        self.logout_button.pack(pady=5)
 
     def update_dashboard(self):
         """Mise à jour du solde et de l'historique des transactions."""
@@ -77,92 +91,94 @@ class Dashboard(ctk.CTk):
         self.transactions_list.delete("1.0", "end")
 
         if not transactions:
-            self.transactions_list.insert("end", "Aucune transaction trouvée.\n")
+            self.transactions_list.insert("end", "No transactions found.\n")
         else:
             for t in transactions:
-                date = t.date.strftime("%d/%m/%Y %H:%M") if t.date else "Inconnue"
+                date = t.date.strftime("%d/%m/%Y %H:%M") if t.date else "Unknown Date"
+                type_transaction = "Credit" if t.amount > 0 else "Debit"
                 description = t.description
-                amount = float(t.amount)
-                self.transactions_list.insert("end", f"{date} - {description}: {amount:.2f}€\n")
+                amount = f"{float(t.amount):.2f}€"
+
+                # ✅ Affichage d'une seule ligne : Date - Type - Description - Montant
+                self.transactions_list.insert("end", f"{date} - {type_transaction} - {description}: {amount}\n")
 
         self.transactions_list.configure(state="disabled")
-        self.plot_transactions()  # ✅ Mettre à jour le graphique après mise à jour des transactions
+        self.plot_transactions()  # ✅ Mettre à jour le graphique après l'affichage des transactions
+
 
     def plot_transactions(self):
         """Affiche un graphique de l'évolution du solde du compte au fil du temps."""
         transactions = Transaction.get_transactions(self.user_id)
 
         if not transactions:
-            print("Aucune transaction à afficher.")
+            print("No transactions to display.")
             return
 
-        # ✅ Supprimer l'ancien graphique s'il existe
         if self.canvas:
             self.canvas.get_tk_widget().destroy()
 
-        # ✅ Trier les transactions par date
         transactions.sort(key=lambda t: t.date)
 
-        # ✅ Récupérer le solde initial du compte
         account = Account.get_account_by_user(self.user_id)
         balance = float(account.balance) if account else 0  
 
-        # ✅ Extraction des dates et calcul du solde cumulé
-        dates = []  
-        balances = []  
+        dates = []
+        balances = []
 
+        # ✅ Parcourir les transactions pour construire le bon solde
         for t in transactions:
-            dates.append(t.date)  
-            balance += float(t.amount)  
-            balances.append(balance)  
+            dates.append(t.date)
+            balances.append(balance)
+            balance -= float(t.amount)  # ✅ On enlève l'opération pour retrouver l'évolution correcte
 
-        # ✅ Convertir les dates en format lisible
         dates = [datetime.strftime(d, "%d/%m/%Y %H:%M") for d in dates]
 
-        # ✅ Création du graphique
         fig, ax = plt.subplots(figsize=(5, 3))
-        ax.plot(dates, balances, marker="o", linestyle="-", color="b", label="Solde")
+        ax.plot(dates, balances, marker="o", linestyle="-", color="b", label="Balance")
         ax.set_xlabel("Date")
-        ax.set_ylabel("Solde (€)")
-        ax.set_title("Évolution du Solde")
+        ax.set_ylabel("Balance (€)")
+        ax.set_title("Balance Evolution")
         ax.legend()
         ax.grid()
-        plt.xticks(rotation=45)  
+        plt.xticks(rotation=45)
 
-        # ✅ Intégration avec Tkinter dans le RIGHT FRAME
-        self.canvas = FigureCanvasTkAgg(fig, master=self.right_frame)
+        self.canvas = FigureCanvasTkAgg(fig, master=self.overview_tab)
         self.canvas.draw()
         self.canvas.get_tk_widget().pack(pady=10)
 
-    def credit(self, amount):
-        account = Account.get_account_by_user(self.user_id)
-        if account:
-            account.credit(amount)
-            self.update_dashboard()
 
     def handle_amount(self, action):
+        """Ajoute une transaction (crédit ou débit)."""
         try:
-            amount = Decimal(self.amount_entry.get())  # Convertir l'entrée en Decimal
+            amount = Decimal(self.amount_entry.get())
+            description = self.description_entry.get()
 
             if action == "credit":
-                self.credit(amount)  # Effectuer un crédit
+                self.credit(amount, description)
             elif action == "debit":
-                self.debit(amount)  # Effectuer un débit
+                self.debit(amount, description)
             else:
-                print("Erreur : action inconnue.")  # Sécurité
+                print("Error: Unknown action.")
 
         except ValueError:
-            print("Erreur : veuillez entrer un nombre valide.")  # Gestion d'erreur
+            print("Error: Please enter a valid number.")
 
-
-    def debit(self, amount):
+    def credit(self, amount, description):
+        """Ajoute un crédit."""
         account = Account.get_account_by_user(self.user_id)
         if account:
-            account.debit(amount)
+            Transaction.create_transaction(self.user_id, description, amount)
+            self.update_dashboard()
+
+    def debit(self, amount, description):
+        """Ajoute un débit."""
+        account = Account.get_account_by_user(self.user_id)
+        if account:
+            Transaction.create_transaction(self.user_id, description, -amount)
             self.update_dashboard()
 
     def logout(self):
-        """Returns to the login screen."""
+        """Retour à l'écran de connexion."""
         from views.app import BudgetBuddyApp
         self.destroy()
         app = BudgetBuddyApp()
