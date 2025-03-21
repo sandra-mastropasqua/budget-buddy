@@ -93,20 +93,20 @@ class BudgetBuddyApp(ctk.CTk):
 
             # 🔴 Vérification des champs vides
             if not all([first_name, last_name, email, password]):
-                message_label.configure(text="Veuillez remplir tous les champs", text_color="red")
+                message_label.configure(text="Please fill in all fields", text_color="red")
                 return
 
             # 🔎 Vérification du format de l'email (regex)
             email_regex = r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
             if not re.match(email_regex, email):
-                message_label.configure(text="Format d'email invalide", text_color="red")
+                message_label.configure(text="Invalid email format", text_color="red")
                 return
 
             # 🔒 Vérification de la sécurité du mot de passe (regex)
             password_regex = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{10,}$"
             if not re.match(password_regex, password):
                 message_label.configure(
-                    text="Mot de passe trop faible :\n(Min. 10 caractères, 1 majuscule, 1 minuscule, 1 chiffre, 1 spécial)",
+                    text="Weak password:\n(Min. 10 characters, 1 uppercase, 1 lowercase, 1 digit, 1 special character)",
                     text_color="red"
                 )
                 return
@@ -116,12 +116,12 @@ class BudgetBuddyApp(ctk.CTk):
             if user_id:
                 account_id = Account.create_account(user_id)  # Crée un compte bancaire associé
                 if account_id:
-                    message_label.configure(text="Compte créé avec succès !", text_color="green")
+                    message_label.configure(text="Account succesfully created !", text_color="green")
                     register_window.after(1000, register_window.destroy)  # Ferme après 1s
                 else:
-                    message_label.configure(text="Erreur lors de la création du compte bancaire", text_color="red")
+                    message_label.configure(text="Error creating bank account", text_color="red")
             else:
-                message_label.configure(text="Erreur lors de la création du compte utilisateur", text_color="red")
+                message_label.configure(text="Error creating user account", text_color="red")
 
         submit_button = ctk.CTkButton(register_window, text="Sign Up", command=submit_registration)
         submit_button.pack(pady=10)
