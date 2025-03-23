@@ -5,7 +5,8 @@ from models.account import Account
 from views.dashboard import Dashboard
 import re
 
-ctk.set_appearance_mode("Dark")
+# Set the appearance mode and color theme
+ctk.set_appearance_mode("Light")
 ctk.set_default_color_theme("dark-blue")
 
 class BudgetBuddyApp(ctk.CTk):
@@ -55,11 +56,12 @@ class BudgetBuddyApp(ctk.CTk):
             self.after(1000, lambda: self.open_dashboard(user["id"]))
         else:
             self.message_label.configure(text="Incorrect email or password", text_color="red")
-    
-    
 
     def create_account(self):
-        """Displays the account creation window and adds the user to the database."""
+        """
+        Displays the account creation window and adds the user to the database.
+        This method opens a new window where the user can enter personal information.
+        """
         register_window = ctk.CTkToplevel(self)
         register_window.title("Create Account")
         register_window.geometry("400x400")
@@ -79,30 +81,33 @@ class BudgetBuddyApp(ctk.CTk):
         password_entry = ctk.CTkEntry(register_window, placeholder_text="Password", show="*")
         password_entry.pack(pady=5)
 
-        # ✅ Ajout d'un label pour afficher les messages d'erreur dans `register_window`
+        # Label for displaying error messages within the 'register_window'
         message_label = ctk.CTkLabel(register_window, text="", text_color="red")
         message_label.pack(pady=5)
 
         def submit_registration():
-            """Soumet l'inscription et crée un compte bancaire après validation."""
+            """
+            Submits the registration form and creates a bank account after validation.
+            It checks the required fields, email format, and password strength.
+            """
             User.create_database_and_tables()
             first_name = first_name_entry.get().strip()
             last_name = last_name_entry.get().strip()
             email = email_entry.get().strip()
             password = password_entry.get().strip()
 
-            # 🔴 Vérification des champs vides
+            # Check if fields are empty
             if not all([first_name, last_name, email, password]):
                 message_label.configure(text="Please fill in all fields", text_color="red")
                 return
 
-            # 🔎 Vérification du format de l'email (regex)
+            # Check email format (regex)
             email_regex = r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
             if not re.match(email_regex, email):
                 message_label.configure(text="Invalid email format", text_color="red")
                 return
 
-            # 🔒 Vérification de la sécurité du mot de passe (regex)
+            # Check password security (regex)
             password_regex = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{10,}$"
             if not re.match(password_regex, password):
                 message_label.configure(
@@ -111,13 +116,15 @@ class BudgetBuddyApp(ctk.CTk):
                 )
                 return
 
-            # ✅ Si tout est bon, créer l'utilisateur
+            # If everything is valid, create the user
             user_id = User.create_user(first_name, last_name, email, password)
             if user_id:
-                account_id = Account.create_account(user_id)  # Crée un compte bancaire associé
+                # Create an associated bank account
+                account_id = Account.create_account(user_id)
                 if account_id:
-                    message_label.configure(text="Account succesfully created !", text_color="green")
-                    register_window.after(1000, register_window.destroy)  # Ferme après 1s
+                    message_label.configure(text="Account successfully created!", text_color="green")
+                    # Close the registration window after 1 second
+                    register_window.after(1000, register_window.destroy)
                 else:
                     message_label.configure(text="Error creating bank account", text_color="red")
             else:
@@ -126,10 +133,8 @@ class BudgetBuddyApp(ctk.CTk):
         submit_button = ctk.CTkButton(register_window, text="Sign Up", command=submit_registration)
         submit_button.pack(pady=10)
 
-
     def open_dashboard(self, user_id):
-        """Opens the dashboard interface."""
+        """Opens the dashboard interface and closes the login window."""
         self.destroy()
         dashboard = Dashboard(user_id)
         dashboard.mainloop()
-
