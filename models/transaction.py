@@ -48,8 +48,8 @@ class Transaction:
                 connection.close()
 
     @staticmethod
-    def get_transactions(user_id: int):
-        """Retrieve all transactions for a specific user."""
+    def get_transactions(user_id, type_filter=None, description_filter=None, start_date=None, end_date=None, sort_order=None):
+        """Récupère les transactions filtrées pour un utilisateur."""
         connection = None
         try:
             connection = mysql.connector.connect(
@@ -58,16 +58,39 @@ class Transaction:
                 password=DB_PASSWORD,
                 database=DB_NAME
             )
-            cursor = connection.cursor()
+            cursor = connection.cursor(dictionary=True)
 
-            cursor.execute("""
-            SELECT id, user_id, description, amount, date FROM transactions WHERE user_id = %s;
-            """, (user_id,))
+            query = """
+            SELECT t.id, t.date, t.description, t.amount
+            FROM transactions t
+            WHERE t.user_id = %s
+            """
+            params = [user_id]
 
-            transactions = []
-            for row in cursor.fetchall():
-                transactions.append(Transaction(row[0], row[1], row[2], row[3], row[4]))
-            # print(transactions)
+            # ✅ Filtre par type (Crédit / Débit)
+            if type_filter and type_filter != "All":
+                query += " AND t.amount " + ("> 0" if type_filter == "Credit" else "< 0")
+
+            # ✅ Filtre par description
+            if description_filter:
+                query += " AND t.description LIKE %s"
+                params.append(f"%{description_filter}%")
+
+            # ✅ Filtre par date
+            if start_date:
+                query += " AND t.date >= %s"
+                params.append(start_date)
+            if end_date:
+                query += " AND t.date <= %s"
+                params.append(end_date)
+
+            # ✅ Tri par montant
+            if sort_order:
+                query += f" ORDER BY t.amount {sort_order}"
+
+            cursor.execute(query, tuple(params))
+            transactions = cursor.fetchall()
+
             return transactions
 
         except mysql.connector.Error as err:

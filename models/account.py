@@ -134,3 +134,31 @@ class Account:
             if connection and connection.is_connected():
                 cursor.close()
                 connection.close()
+
+    def update_balance(self, amount):
+        """Met à jour le solde du compte dans la base de données."""
+        connection = None
+        try:
+            connection = mysql.connector.connect(
+                host=DB_HOST,
+                user=DB_USER,
+                password=DB_PASSWORD,
+                database=DB_NAME
+            )
+            cursor = connection.cursor()
+
+            print(f"DEBUG: Mise à jour du solde en DB - Ajout de {amount}€")
+            cursor.execute("""
+                UPDATE accounts SET balance = balance + %s WHERE id = %s;
+            """, (amount, self.account_id))
+
+            connection.commit()
+            self.balance += amount
+
+        except mysql.connector.Error as err:
+            print(f"Error MySQL : {err}")
+        finally:
+            if connection and connection.is_connected():
+                cursor.close()
+                connection.close()
+

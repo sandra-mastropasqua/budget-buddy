@@ -149,9 +149,9 @@ class User:
             user = cursor.fetchone()
 
             if user and bcrypt.checkpw(password.encode('utf-8'), user["password"].encode('utf-8')):
-                return user  # Returns user if login succeed
+                return user
             else:
-                return None  # Returns None if login wrong
+                return None
 
         except mysql.connector.Error as err:
             print(f"Erreur MySQL : {err}")
