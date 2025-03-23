@@ -1,7 +1,10 @@
+# models/transaction.py
 import mysql.connector
 from datetime import datetime
-from dotenv import load_dotenv
+from decimal import Decimal
 import os
+from dotenv import load_dotenv
+
 load_dotenv()
 
 DB_HOST = os.getenv("DB_HOST")
@@ -10,96 +13,97 @@ DB_PASSWORD = os.getenv("DB_PASSWORD")
 DB_NAME = os.getenv("DB_NAME")
 
 class Transaction:
-    def __init__(self, id: int, user_id: int, description: str, amount: float, date: str):
-        self.id = id
-        self.user_id = user_id
-        self.description = description
-        self.amount = amount
-        self.date = date
-
-    @staticmethod
-    def create_transaction(user_id: int, description: str, amount: float) -> 'Transaction':
-        """Creates a transaction for a user and returns the transaction."""
-        connection = None
+    @classmethod
+    def create_transaction(cls, account_id, transaction_type, amount):
+        """Crée une nouvelle transaction dans la base de données"""
+        conn = mysql.connector.connect(
+            host=DB_HOST,
+            user=DB_USER,
+            password=DB_PASSWORD,
+            database=DB_NAME
+        )
         try:
-            connection = mysql.connector.connect(
-                host=DB_HOST,
-                user=DB_USER,
-                password=DB_PASSWORD,
-                database=DB_NAME
-            )
-            cursor = connection.cursor()
-            transaction_date = datetime.now()
-            print(f"INSERT INTO transactions: {user_id}, {description}, {amount}")
-            cursor.execute("""
-            INSERT INTO transactions (user_id, description, amount)
-            VALUES (%s, %s, %s);
-            """, (user_id, description, amount))
-
-            connection.commit()
-            return Transaction(cursor.lastrowid, user_id, description, amount, None)
-
-        except mysql.connector.Error as err:
-            print(f"Error MySQL : {err}")
-            return None
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    """INSERT INTO transactions 
+                    (account_id, type, amount, date)
+                    VALUES (%s, %s, %s, %s)""",
+                    (account_id, transaction_type, float(amount), datetime.now())
+                )
+                conn.commit()
         finally:
-            if connection and connection.is_connected():
-                cursor.close()
-                connection.close()
+            conn.close()
 
-    @staticmethod
-    def get_transactions(user_id, type_filter=None, description_filter=None, start_date=None, end_date=None, sort_order=None):
-        """Récupère les transactions filtrées pour un utilisateur."""
-        connection = None
+    @classmethod
+    def get_transactions(cls, user_id):
+        conn = mysql.connector.connect(
+            host=DB_HOST,
+            user=DB_USER,
+            password=DB_PASSWORD,
+            database=DB_NAME
+        )
         try:
-            connection = mysql.connector.connect(
-                host=DB_HOST,
-                user=DB_USER,
-                password=DB_PASSWORD,
-                database=DB_NAME
-            )
-            cursor = connection.cursor(dictionary=True)
-
-            query = """
-            SELECT t.id, t.date, t.description, t.amount
-            FROM transactions t
-            WHERE t.user_id = %s
-            """
-            params = [user_id]
-
-            # ✅ Filtre par type (Crédit / Débit)
-            if type_filter and type_filter != "All":
-                query += " AND t.amount " + ("> 0" if type_filter == "Credit" else "< 0")
-
-            # ✅ Filtre par description
-            if description_filter:
-                query += " AND t.description LIKE %s"
-                params.append(f"%{description_filter}%")
-
-            # ✅ Filtre par date
-            if start_date:
-                query += " AND t.date >= %s"
-                params.append(start_date)
-            if end_date:
-                query += " AND t.date <= %s"
-                params.append(end_date)
-
-            # ✅ Tri par montant
-            if sort_order:
-                query += f" ORDER BY t.amount {sort_order}"
-
-            cursor.execute(query, tuple(params))
-            transactions = cursor.fetchall()
-
-            return transactions
-
-        except mysql.connector.Error as err:
-            print(f"Error MySQL : {err}")
-            return []
+            with conn.cursor(dictionary=True) as cursor:
+                cursor.execute(
+                    """SELECT t.* FROM transactions t
+                    JOIN accounts a ON t.account_id = a.id  # Correction ici
+                    WHERE a.user_id = %s
+                    ORDER BY t.date DESC""",
+                    (user_id,)
+                )
+                return cursor.fetchall()
         finally:
-            if connection and connection.is_connected():
-                cursor.close()
-                connection.close()
+            conn.close()
 
-    def __repr__(self):
-        return f"Transaction(id={self.id}, user_id={self.user_id}, description={self.description}, amount={self.amount}, date={self.date})"
+    @classmethod
+    def get_filtered_transactions(cls, user_id, filters):
+        conn = mysql.connector.connect(
+            host=DB_HOST,
+            user=DB_USER,
+            password=DB_PASSWORD,
+            database=DB_NAME
+        )
+        try:
+            with conn.cursor(dictionary=True) as cursor:
+                # Construction dynamique de la requête
+                base_query = """SELECT t.* FROM transactions t
+                              JOIN accounts a ON t.account_id = a.id
+                              WHERE a.user_id = %s"""
+                params = [user_id]
+                conditions = []
+
+                # Filtre par type
+                if filters.get('transaction_type') and filters['transaction_type'] != 'All':
+                    if filters['transaction_type'] == 'Credit':
+                        conditions.append("t.amount > 0")
+                    else:
+                        conditions.append("t.amount < 0")
+
+                # Filtre par description
+                if filters.get('description'):
+                    conditions.append("t.description LIKE %s")
+                    params.append(f"%{filters['description']}%")
+
+                # Filtre par date
+                if filters.get('start_date') and filters.get('end_date'):
+                    conditions.append("t.date BETWEEN %s AND %s")
+                    params.extend([filters['start_date'], filters['end_date']])
+
+                # Tri
+                order_clause = ""
+                if filters.get('sort_order'):
+                    if filters['sort_order'] == 'Ascending':
+                        order_clause = "ORDER BY t.amount ASC"
+                    elif filters['sort_order'] == 'Descending':
+                        order_clause = "ORDER BY t.amount DESC"
+
+                # Assemblage final de la requête
+                full_query = base_query
+                if conditions:
+                    full_query += " AND " + " AND ".join(conditions)
+                full_query += " " + order_clause
+
+                cursor.execute(full_query, tuple(params))
+                return cursor.fetchall()
+        finally:
+            conn.close()
