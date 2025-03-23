@@ -29,6 +29,9 @@ class Dashboard(ctk.CTk):
         self.balance_label = ctk.CTkLabel(self.header_frame, text="Balance: 0€", font=("Arial", 18))
         self.balance_label.pack(side="right", padx=10)
 
+        self.notification_label = ctk.CTkLabel(self.header_frame, text="", text_color="red", font=("Arial", 14))
+        self.notification_label.pack(side="bottom", pady=5)
+
         self.tabview = ctk.CTkTabview(self)
         self.tabview.pack(fill="both", expand=True, padx=10, pady=10)
 
@@ -144,7 +147,12 @@ class Dashboard(ctk.CTk):
         """Mise à jour du solde et de l'historique des transactions."""
         account = Account.get_account_by_user(self.user_id)
         if account:
+            balance = float(account.balance)
             self.balance_label.configure(text=f"Balance: {float(account.balance):.2f}€")
+            if balance < 0:
+                self.notification_label.configure(text="Attention : Vous êtes en découvert !")
+            else:
+                self.notification_label.configure(text="")
 
         transactions = Transaction.get_transactions(self.user_id)
 
