@@ -5,6 +5,7 @@ from models.user import User
 from decimal import Decimal
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from views.transfer_window2 import TransferWindow
 from datetime import datetime
 from tkinter import messagebox
 import os
@@ -296,18 +297,18 @@ class Dashboard(ctk.CTk):
                 ).pack(anchor="w", padx=5, pady=2)
 
     def open_transfer_window(self):
-        """Ouvre la fenêtre de transfert d'argent"""
+        """Open the transfer window"""
         TransferWindow(self.user_id, self)
 
     def logout(self):
-        """Retour à l'écran de connexion."""
+        """Back to the screen"""
         from views.app import BudgetBuddyApp
         self.destroy()
         app = BudgetBuddyApp()
         app.mainloop()
     
     def update_balance(self):
-        """Met a jour le solde affiché après un transfert"""
+        """Update the displayed balance after a transfer"""
         connection = mysql.connector.connect(
             host=os.getenv("DB_HOST"),
             user=os.getenv("DB_USER"),
@@ -322,7 +323,7 @@ class Dashboard(ctk.CTk):
             new_balance = account["balance"]
             self.balance_label.configure(text=f"Balance :{new_balance}euros")
             self.update_idletasks()
-            messagebox.showinfo("DEBUG",f"Nouveau solde récupéré : {new_balance}euros ")
+            messagebox.showinfo("DEBUG",f"New balance : {new_balance}euros ")
         
         cursor.close()
         connection.close()
