@@ -5,6 +5,9 @@ from models.account import Account
 from views.dashboard import Dashboard
 import re
 
+ctk.set_appearance_mode("Dark")
+ctk.set_default_color_theme("dark-blue")
+
 class BudgetBuddyApp(ctk.CTk):
     def __init__(self):
         super().__init__()
@@ -18,26 +21,23 @@ class BudgetBuddyApp(ctk.CTk):
     def create_login_interface(self):
         """Creates the login interface."""
         # Load and display the logo
-        self.logo = ctk.CTkImage(light_image=Image.open("assets\images\logo.png"), size=(100, 100))
+        self.logo = ctk.CTkImage(light_image=Image.open("assets/images/logo.png"), size=(100, 100))
         self.logo_label = ctk.CTkLabel(self, image=self.logo, text="")
         self.logo_label.pack(pady=10)
 
-        ctk.set_default_color_theme("dark-blue")
-        ctk.set_appearance_mode("Dark")
+        self.label_title = ctk.CTkLabel(self, text="Budget Buddy", font=("Arial", 24, "bold"))
+        self.label_title.pack(pady=10)
 
-        self.label_title = ctk.CTkLabel(self, text="Budget Buddy", font=("Arial", 24))
-        self.label_title.pack(pady=20)
-
-        self.email_entry = ctk.CTkEntry(self, placeholder_text="Email")
+        self.email_entry = ctk.CTkEntry(self, placeholder_text="Email", width=250)
         self.email_entry.pack(pady=10)
 
-        self.password_entry = ctk.CTkEntry(self, placeholder_text="Password", show="*")
+        self.password_entry = ctk.CTkEntry(self, placeholder_text="Password", show="*", width=250)
         self.password_entry.pack(pady=10)
 
-        self.login_button = ctk.CTkButton(self, text="Login", command=self.login)
+        self.login_button = ctk.CTkButton(self, text="Login", command=self.login, width=150)
         self.login_button.pack(pady=10)
 
-        self.register_button = ctk.CTkButton(self, text="Create Account", command=self.create_account)
+        self.register_button = ctk.CTkButton(self, text="Create Account", command=self.create_account, width=150)
         self.register_button.pack(pady=5)
 
         self.message_label = ctk.CTkLabel(self, text="", text_color="red")
