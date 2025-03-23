@@ -6,6 +6,12 @@ from decimal import Decimal
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from datetime import datetime
+from views.transfer_window import TransferWindow
+from tkinter import messagebox
+import os
+import mysql.connector
+from dotenv import load_dotenv
+load_dotenv()
 
 class Dashboard(ctk.CTk):
     def __init__(self, user_id):
@@ -29,6 +35,7 @@ class Dashboard(ctk.CTk):
 
         self.balance_label = ctk.CTkLabel(self.header_frame, text="Balance: 0€", font=("Arial", 18))
         self.balance_label.pack(side="right", padx=10)
+
 
         # ✅ CONTENEUR PRINCIPAL (2 colonnes)
         self.main_frame = ctk.CTkFrame(self)
@@ -60,6 +67,9 @@ class Dashboard(ctk.CTk):
         self.debit_button = ctk.CTkButton(self, text="Debit", command=lambda: self.handle_amount("debit"))
         self.debit_button.pack(pady=5)
 
+        self.transfer_button = ctk.CTkButton(self, text="Transfer money", command=self.open_transfer_window)
+        self.transfer_button.pack(pady=10)
+
         self.logout_button = ctk.CTkButton(self, text="Logout", command=self.logout)
         self.logout_button.pack(pady=10)
 
@@ -87,6 +97,10 @@ class Dashboard(ctk.CTk):
 
         self.transactions_list.configure(state="disabled")
         self.plot_transactions()  # ✅ Mettre à jour le graphique après mise à jour des transactions
+    
+    def open_transfer_window(self):
+        """Ouvre la fenêtre de transfert d'argent """
+        TransferWindow(self.user_id, self)
 
     def plot_transactions(self):
         """Affiche un graphique de l'évolution du solde du compte au fil du temps."""
@@ -160,6 +174,10 @@ class Dashboard(ctk.CTk):
         if account:
             account.debit(amount)
             self.update_dashboard()
+    
+    def open_transfer_window(self):
+        """Ouvre la fenêtre de transfert d'argent"""
+        TransferWindow(self.user_id, self)
 
     def logout(self):
         """Returns to the login screen."""
@@ -167,3 +185,24 @@ class Dashboard(ctk.CTk):
         self.destroy()
         app = BudgetBuddyApp()
         app.mainloop()
+    
+    def update_balance(self):
+        """Met a jour le solde affiché après un transfert"""
+        connection = mysql.connector.connect(
+            host=os.getenv("DB_HOST"),
+            user=os.getenv("DB_USER"),
+            password=os.getenv("DB_PASSWORD"),
+            database=os.getenv("DB_NAME")
+        )
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute("SELECT balance FROM accounts WHERE user_id = %s", (self.user_id,))
+        account = cursor.fetchone()
+
+        if account :
+            new_balance = account["balance"]
+            self.balance_label.configure(text=f"Balance :{new_balance}euros")
+            self.update_idletasks()
+            messagebox.showinfo("DEBUG",f"Nouveau solde récupéré : {new_balance}euros ")
+        
+        cursor.close()
+        connection.close()

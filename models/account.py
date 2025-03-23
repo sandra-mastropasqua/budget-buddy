@@ -2,6 +2,8 @@ import mysql.connector
 import os
 from dotenv import load_dotenv
 from models.transaction import Transaction
+from tkinter import messagebox
+
 
 load_dotenv()
 
@@ -130,6 +132,73 @@ class Account:
 
         except mysql.connector.Error as err:
             print(f"MySQL Error: {err}")
+        finally:
+            if connection and connection.is_connected():
+                cursor.close()
+                connection.close()
+    @staticmethod
+    def transfer_funds(from_account_id, to_account_number, amount):
+        """Transfers money from one account to another"""
+        
+        # connection = None
+        try :
+            connection = mysql.connector.connect(
+                host=DB_HOST,
+                user=DB_USER,
+                password=DB_PASSWORD,
+                database=DB_NAME
+            )
+            cursor = connection.cursor(dictionary=True)
+
+            cursor.execute("SELECT balance FROM accounts WHERE id = %s", (from_account_id,))
+            from_account = cursor.fetchone()
+
+            if not from_account or from_account["balance"] < amount :
+                messagebow.showerror("Erreur","Fonds insuffisants ou Compte introuvable")
+                return False
+            cursor.execute("""
+                SELECT accounts.id FROM accounts
+                JOIN users ON accounts.user_id = users.id
+                WHERE users.email = %s
+            """, (to_account_number,))
+            to_account = cursor.fetchone()
+           
+
+            if not to_account:
+                messagebox.showerror("Erreur","Compte destinataire introuvable")
+                return False
+
+            to_account_id = int(to_account["id"])
+            if to_account_id is None :
+                messagebox.showerror("Erreur", "Le compte destinataire est invalide")
+                return False
+
+
+            cursor.execute("SELECT balance FROM accounts WHERE id =%s", (to_account_id,))
+            to_account_balance = cursor.fetchone()
+
+            if not to_account_balance:
+                messagebox.showerror("Erreur", "Impossible de recuperer le solde du destinaire")
+                return False
+
+            new_balance_from = float(from_account["balance"]) - amount
+            new_balance_to = float(to_account_balance["balance"]) + amount
+            
+            cursor.execute("START TRANSACTION;")
+            cursor.execute("UPDATE accounts SET balance = %s WHERE id = %s", (new_balance_from, from_account_id))
+            cursor.execute("UPDATE accounts SET balance = %s WHERE id = %s", (new_balance_to, to_account_id))
+
+            Transaction.create_transaction(from_account_id, f"Transfert vers {to_account_number}", -amount)
+            Transaction.create_transaction(to_account_id, f"Transfert reçu de {from_account_id}", amount)
+
+            connection.commit()
+            # messagebox.showinfo("Succès", "Transfert effectuer avec succès")
+            return True
+        except mysql.connector.Error as err:
+            messagebox.showerror("Erreur MySQL", f"Problème SQL : {err}")
+            if connection :
+                connection.rollback()
+            return False
         finally:
             if connection and connection.is_connected():
                 cursor.close()

@@ -4,6 +4,7 @@ from models.user import User
 from models.account import Account
 from views.dashboard import Dashboard
 
+
 class BudgetBuddyApp(ctk.CTk):
     def __init__(self):
         super().__init__()
@@ -17,7 +18,7 @@ class BudgetBuddyApp(ctk.CTk):
     def create_login_interface(self):
         """Creates the login interface."""
         # Load and display the logo
-        self.logo = ctk.CTkImage(light_image=Image.open("assets\images\logo.png"), size=(100, 100))
+        self.logo = ctk.CTkImage(light_image=Image.open("assets\\images\\logo.png"), size=(100, 100))
         self.logo_label = ctk.CTkLabel(self, image=self.logo, text="")
         self.logo_label.pack(pady=10)
 
