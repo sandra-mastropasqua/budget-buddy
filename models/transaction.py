@@ -23,17 +23,18 @@ class Transaction:
             database=DB_NAME
         )
         try:
-            with conn.cursor() as cursor:
+            with conn.cursor(dictionary=True) as cursor:
+                # REQUÊTE CORRIGÉE
                 cursor.execute(
-                    """INSERT INTO transactions 
-                    (account_id, type, amount, date)
-                    VALUES (%s, %s, %s, %s)""",
-                    (account_id, transaction_type, float(amount), datetime.now())
+                    """SELECT t.* FROM transactions t
+                    INNER JOIN accounts a ON t.account_id = a.id
+                    WHERE a.user_id = %s
+                    ORDER BY t.date DESC""",
+                    (user_id,)
                 )
-                conn.commit()
+                return cursor.fetchall()
         finally:
             conn.close()
-
     @classmethod
     def get_transactions(cls, user_id):
         conn = mysql.connector.connect(
