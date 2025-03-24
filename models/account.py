@@ -4,6 +4,7 @@ import os
 from dotenv import load_dotenv
 from models.transaction import Transaction
 from tkinter import messagebox
+from datetime import datetime
 
 load_dotenv()
 
@@ -140,6 +141,7 @@ class Account:
     @staticmethod
     def transfer_funds(from_account_id, to_account_number, amount):
         print(f"DEBUG: transfer_funds(from={from_account_id}, to={to_account_number}, amount={amount})")
+
         try:
             connection = mysql.connector.connect(
                 host=DB_HOST,
@@ -147,58 +149,67 @@ class Account:
                 password=DB_PASSWORD,
                 database=DB_NAME
             )
+            connection.autocommit = False  # 🔴 Désactiver l'autocommit pour contrôler la transaction
             cursor = connection.cursor(dictionary=True)
 
-            cursor.execute("SELECT balance FROM accounts WHERE id = %s", (from_account_id,))
+            # 🔎 Vérifier le solde du compte source avec un verrou `FOR UPDATE`
+            cursor.execute("SELECT balance FROM accounts WHERE id = %s FOR UPDATE", (from_account_id,))
             from_account = cursor.fetchone()
-            print(f"DEBUG: from_account={from_account}")
 
             if not from_account or from_account["balance"] < amount:
                 print("DEBUG: Solde insuffisant ou compte inexistant")
-                # messagebox.showerror("Error","Funds are not enough") <-- Éviter si pas de parent
                 return False
 
+            # 🔎 Récupérer l'ID du compte destinataire avec un verrou `FOR UPDATE`
             cursor.execute("""
                 SELECT accounts.id FROM accounts
                 JOIN users ON accounts.user_id = users.id
                 WHERE users.email = %s
+                FOR UPDATE
             """, (to_account_number,))
             to_account = cursor.fetchone()
-            print(f"DEBUG: to_account={to_account}")
 
             if not to_account:
                 print("DEBUG: Destination account not found")
-                # messagebox.showerror("Error","Destination account not found")
                 return False
 
             to_account_id = int(to_account["id"])
 
-            cursor.execute("SELECT balance FROM accounts WHERE id = %s", (to_account_id,))
+            # 🔎 Vérifier l'existence du compte destinataire
+            cursor.execute("SELECT balance FROM accounts WHERE id = %s FOR UPDATE", (to_account_id,))
             to_account_balance = cursor.fetchone()
+
             if not to_account_balance:
                 print("DEBUG: Impossible to get the sold of the account")
                 return False
 
+            # ✅ Calcul des nouveaux soldes
             new_balance_from = float(from_account["balance"]) - amount
             new_balance_to = float(to_account_balance["balance"]) + amount
 
+            # 🔄 DÉBUT TRANSACTION
             cursor.execute("START TRANSACTION;")
+
+            # 🏦 Mise à jour des soldes
             cursor.execute("UPDATE accounts SET balance = %s WHERE id = %s", (new_balance_from, from_account_id))
             cursor.execute("UPDATE accounts SET balance = %s WHERE id = %s", (new_balance_to, to_account_id))
 
-            # Transactions
-            Transaction.create_transaction(from_account_id, f"Transfer to {to_account_number}", -amount)
-            Transaction.create_transaction(to_account_id, f"Transfer received from {from_account_id}", amount)
+            # 📜 Enregistrement des transactions
+            Transaction.create_transaction(from_account_id, f"Transfer to {to_account_number}", -amount, datetime.now())
+            Transaction.create_transaction(to_account_id, f"Transfer received from {from_account_id}", amount, datetime.now())
 
+            # ✅ Valider la transaction
             connection.commit()
             print("DEBUG: Commit OK, transfert terminé")
+
             return True
 
         except mysql.connector.Error as err:
             print(f"DEBUG: Exception MySQL => {err}")
             if connection:
-                connection.rollback()
+                connection.rollback()  # ❌ Annuler la transaction en cas d'erreur
             return False
+
         finally:
             if connection and connection.is_connected():
                 cursor.close()

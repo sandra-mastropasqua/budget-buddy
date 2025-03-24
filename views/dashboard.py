@@ -334,7 +334,10 @@ class Dashboard(ctk.CTk):
                 ).pack(anchor="w", padx=5, pady=2)
 
     def open_transfer_window(self):
-        TransferWindow(self.user_id, self)
+        """Ouvre la fenêtre de transfert et met à jour le dashboard après l'opération."""
+        transfer_window = TransferWindow(self.user_id, self)
+        self.wait_window(transfer_window)  # ⏳ Attend la fermeture de la fenêtre
+        self.update_dashboard()  # 🔄 Mettre à jour après transfert
 
     # -----------------------------------------------------------------------
     # Déconnexion
@@ -346,7 +349,7 @@ class Dashboard(ctk.CTk):
         app.mainloop()
     
     def update_balance(self):
-        """Met à jour le solde affiché après un transfert."""
+        """Met à jour le solde et rafraîchit le dashboard après un transfert."""
         connection = mysql.connector.connect(
             host=os.getenv("DB_HOST"),
             user=os.getenv("DB_USER"),
@@ -359,9 +362,11 @@ class Dashboard(ctk.CTk):
 
         if account:
             new_balance = account["balance"]
-            self.balance_label.configure(text=f"Balance : {new_balance}€")
+            self.balance_label.configure(text=f"Balance: {new_balance:.2f}€")
             self.update_idletasks()
-            messagebox.showinfo("DEBUG", f"New balance : {new_balance}€")
+            messagebox.showinfo("DEBUG", f"New balance: {new_balance}€")
         
         cursor.close()
         connection.close()
+
+        self.update_dashboard()  # 🔄 Met à jour les transactions et le graphique

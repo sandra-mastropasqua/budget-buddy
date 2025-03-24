@@ -32,14 +32,19 @@ class Transaction:
             )
             cursor = connection.cursor()
             transaction_date = datetime.now()
-            print(f"INSERT INTO transactions: {account_id}, {description}, {amount}")
+
+
             cursor.execute("""
-                INSERT INTO transactions (account_id, description, amount)
-                VALUES (%s, %s, %s);
-            """, (account_id, description, amount))
+                INSERT INTO transactions (account_id, description, amount, date)
+                VALUES (%s, %s, %s, %s);
+            """, (account_id, description, amount, transaction_date))
 
             connection.commit()
-            return Transaction(cursor.lastrowid, account_id, description, amount, None)
+
+            # Vérification après insertion
+            cursor.execute("SELECT * FROM transactions WHERE account_id = %s ORDER BY date DESC LIMIT 5", (account_id,))
+
+            return Transaction(cursor.lastrowid, account_id, description, amount, transaction_date)
 
         except mysql.connector.Error as err:
             print(f"Error MySQL : {err}")
@@ -48,6 +53,7 @@ class Transaction:
             if connection and connection.is_connected():
                 cursor.close()
                 connection.close()
+
 
     @staticmethod
     def get_transactions(account_id, type_filter=None, description_filter=None, start_date=None, end_date=None, sort_order=None):
