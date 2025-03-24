@@ -139,7 +139,7 @@ class Account:
 
     @staticmethod
     def transfer_funds(from_account_id, to_account_number, amount):
-        """Transfers money from one account to another"""
+        print(f"DEBUG: transfer_funds(from={from_account_id}, to={to_account_number}, amount={amount})")
         try:
             connection = mysql.connector.connect(
                 host=DB_HOST,
@@ -149,50 +149,53 @@ class Account:
             )
             cursor = connection.cursor(dictionary=True)
 
-            # Vérifier le solde du compte source
             cursor.execute("SELECT balance FROM accounts WHERE id = %s", (from_account_id,))
             from_account = cursor.fetchone()
+            print(f"DEBUG: from_account={from_account}")
 
             if not from_account or from_account["balance"] < amount:
-                messagebox.showerror("Error", "Funds are not enough")
+                print("DEBUG: Solde insuffisant ou compte inexistant")
+                # messagebox.showerror("Error","Funds are not enough") <-- Éviter si pas de parent
                 return False
 
-            # Récupérer l'ID du compte destinataire via l'email (vous utilisez to_account_number = email)
             cursor.execute("""
                 SELECT accounts.id FROM accounts
                 JOIN users ON accounts.user_id = users.id
                 WHERE users.email = %s
             """, (to_account_number,))
             to_account = cursor.fetchone()
+            print(f"DEBUG: to_account={to_account}")
 
             if not to_account:
-                messagebox.showerror("Error", "Destination account not found")
+                print("DEBUG: Destination account not found")
+                # messagebox.showerror("Error","Destination account not found")
                 return False
 
             to_account_id = int(to_account["id"])
 
             cursor.execute("SELECT balance FROM accounts WHERE id = %s", (to_account_id,))
             to_account_balance = cursor.fetchone()
-
             if not to_account_balance:
-                messagebox.showerror("Error", "Impossible to get the sold of the account")
+                print("DEBUG: Impossible to get the sold of the account")
                 return False
 
             new_balance_from = float(from_account["balance"]) - amount
             new_balance_to = float(to_account_balance["balance"]) + amount
-            
+
             cursor.execute("START TRANSACTION;")
             cursor.execute("UPDATE accounts SET balance = %s WHERE id = %s", (new_balance_from, from_account_id))
             cursor.execute("UPDATE accounts SET balance = %s WHERE id = %s", (new_balance_to, to_account_id))
 
-            # Créer les transactions (ID de compte source et ID de compte destination)
+            # Transactions
             Transaction.create_transaction(from_account_id, f"Transfer to {to_account_number}", -amount)
             Transaction.create_transaction(to_account_id, f"Transfer received from {from_account_id}", amount)
 
             connection.commit()
+            print("DEBUG: Commit OK, transfert terminé")
             return True
+
         except mysql.connector.Error as err:
-            messagebox.showerror("Error MySQL", f"Problem SQL : {err}")
+            print(f"DEBUG: Exception MySQL => {err}")
             if connection:
                 connection.rollback()
             return False

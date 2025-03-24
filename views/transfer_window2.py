@@ -38,34 +38,33 @@ class TransferWindow(ctk.CTkToplevel):
         self.transfer_button.pack()
         
     def transfer_money(self):
+        print("DEBUG: Entrée dans transfer_money")
         to_account_number = self.to_account_entry.get()
-
         try:
             amount = float(self.amount_entry.get())
         except ValueError:
-            messagebox.showerror("Error", "The amount must be a valid number")
+            messagebox.showerror("Error", "The amount must be a valid number", parent=self)
             return
-        if amount <= 0:
-            messagebox.showerror("Error", "The amount must be positive")
-            return
-            
+        
+        print(f"DEBUG: Montant={amount}, Destinataire={to_account_number}")
+
         user_account = Account.get_account_by_user(self.user_id)
         if not user_account:
-            messagebox.showerror("Error", "Account not found")
+            messagebox.showerror("Error", "Account not found", parent=self)
             return
+        
+        print(f"DEBUG: Source account_id={user_account.account_id}")
 
-        # On utilise l’ID du compte source pour le transfert
         success = Account.transfer_funds(user_account.account_id, to_account_number, amount)
+        print(f"DEBUG: transfer_funds => success={success}")
 
         if success:
-            messagebox.showinfo("Success", "Transfer made with success")
+            messagebox.showinfo("Success", "Transfer made with success", parent=self)
             if hasattr(self.dashboard, "update_balance"):
                 try:
                     self.dashboard.update_balance()
                 except Exception as e:
-                    messagebox.showerror("Error", f"Failed : {e}")
-            else:
-                messagebox.showerror("Error", "update_balance() doesn't exist on the dashboard")
+                    messagebox.showerror("Error", f"Failed : {e}", parent=self)
             self.destroy()
         else:
-            messagebox.showerror("Error", "The transfer has failed. Check your informations")
+            messagebox.showerror("Error", "The transfer has failed. Check your informations", parent=self)
