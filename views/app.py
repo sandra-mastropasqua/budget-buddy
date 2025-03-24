@@ -1,3 +1,4 @@
+# views/app.py
 import customtkinter as ctk
 from PIL import Image
 from models.user import User
@@ -5,7 +6,6 @@ from models.account import Account
 from views.dashboard import Dashboard
 import re
 
-# Set the appearance mode and color theme
 ctk.set_appearance_mode("Light")
 ctk.set_default_color_theme("dark-blue")
 
@@ -58,10 +58,7 @@ class BudgetBuddyApp(ctk.CTk):
             self.message_label.configure(text="Incorrect email or password", text_color="red")
 
     def create_account(self):
-        """
-        Displays the account creation window and adds the user to the database.
-        This method opens a new window where the user can enter personal information.
-        """
+        """Displays the account creation window and adds the user to the database."""
         register_window = ctk.CTkToplevel(self)
         register_window.title("Create Account")
         register_window.geometry("400x400")
@@ -81,15 +78,10 @@ class BudgetBuddyApp(ctk.CTk):
         password_entry = ctk.CTkEntry(register_window, placeholder_text="Password", show="*")
         password_entry.pack(pady=5)
 
-        # Label for displaying error messages within the 'register_window'
         message_label = ctk.CTkLabel(register_window, text="", text_color="red")
         message_label.pack(pady=5)
 
         def submit_registration():
-            """
-            Submits the registration form and creates a bank account after validation.
-            It checks the required fields, email format, and password strength.
-            """
             User.create_database_and_tables()
             first_name = first_name_entry.get().strip()
             last_name = last_name_entry.get().strip()
@@ -102,6 +94,7 @@ class BudgetBuddyApp(ctk.CTk):
                 return
 
             # Check email format (regex)
+            import re
             email_regex = r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
             if not re.match(email_regex, email):
                 message_label.configure(text="Invalid email format", text_color="red")
@@ -116,14 +109,11 @@ class BudgetBuddyApp(ctk.CTk):
                 )
                 return
 
-            # If everything is valid, create the user
             user_id = User.create_user(first_name, last_name, email, password)
             if user_id:
-                # Create an associated bank account
                 account_id = Account.create_account(user_id)
                 if account_id:
                     message_label.configure(text="Account successfully created!", text_color="green")
-                    # Close the registration window after 1 second
                     register_window.after(1000, register_window.destroy)
                 else:
                     message_label.configure(text="Error creating bank account", text_color="red")

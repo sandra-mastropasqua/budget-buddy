@@ -1,3 +1,4 @@
+# views/dashboard.py
 import customtkinter as ctk
 from models.account import Account
 from models.transaction import Transaction
@@ -5,7 +6,14 @@ from models.user import User
 from decimal import Decimal
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from views.transfer_window2 import TransferWindow
 from datetime import datetime
+from tkinter import messagebox
+import os
+import mysql.connector
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class Dashboard(ctk.CTk):
     def __init__(self, user_id):
@@ -17,7 +25,7 @@ class Dashboard(ctk.CTk):
         self.geometry("1000x600")
         self.resizable(False, False)
 
-        # Retrieve user's name to display
+        # Récupération du nom de l'utilisateur
         user = User.get_user_by_id(user_id)
         full_name = f"{user['firstname']} {user['lastname']}" if user else "Unknown User"
 
@@ -31,7 +39,7 @@ class Dashboard(ctk.CTk):
         self.balance_label = ctk.CTkLabel(self.header_frame, text="Balance: 0€", font=("Arial", 18))
         self.balance_label.pack(side="right", padx=10)
 
-        # ►► Overdraft notification label
+        # Notification de découvert
         self.notification_label = ctk.CTkLabel(self.header_frame, text="", text_color="red", font=("Arial", 14))
         self.notification_label.pack(side="bottom", pady=5)
 
@@ -43,23 +51,23 @@ class Dashboard(ctk.CTk):
         self.overview_tab = self.tabview.add("Overview")
         self.settings_tab = self.tabview.add("Settings")
 
-        # Set up each tab
+        # Configuration des onglets
         self.setup_transactions_tab()
         self.setup_overview_tab()
         self.setup_settings_tab()
 
-        # Initial dashboard update
+        # Mise à jour initiale du dashboard
         self.update_dashboard()
 
     # -----------------------------------------------------------------------
     # "Overview" Tab
     # -----------------------------------------------------------------------
     def setup_overview_tab(self):
-        """Sets up the 'Overview' tab with a column-based layout."""
+        """Configuration de l'onglet 'Overview'."""
         self.overview_frame = ctk.CTkFrame(self.overview_tab)
         self.overview_frame.pack(fill="both", expand=True, padx=10, pady=10)
 
-        # Left frame: transaction list
+        # Cadre gauche : liste des transactions
         self.transactions_frame = ctk.CTkFrame(self.overview_frame, width=400)
         self.transactions_frame.pack(side="left", fill="both", expand=True, padx=10, pady=10)
 
@@ -69,7 +77,7 @@ class Dashboard(ctk.CTk):
         self.transactions_container_overview = ctk.CTkFrame(self.transactions_frame)
         self.transactions_container_overview.pack(fill="both", expand=True, padx=10, pady=10)
 
-        # Right frame: graph
+        # Cadre droit : graphique
         self.graph_frame = ctk.CTkFrame(self.overview_frame, width=500, height=400)
         self.graph_frame.pack(side="right", expand=True, padx=10, pady=10)
 
@@ -77,13 +85,11 @@ class Dashboard(ctk.CTk):
     # "Transactions" Tab
     # -----------------------------------------------------------------------
     def setup_transactions_tab(self):
-        """Sets up the 'Transactions' tab with filters and actions."""
-
-        # Main frame for the "Transactions" tab
+        """Configuration de l'onglet 'Transactions' avec filtres et actions."""
         self.transactions_layout = ctk.CTkFrame(self.transactions_tab)
         self.transactions_layout.pack(fill="both", expand=True, padx=10, pady=10)
 
-        # 1) Filter frame at the top
+        # Cadre des filtres
         self.filter_frame = ctk.CTkFrame(self.transactions_layout)
         self.filter_frame.pack(side="top", fill="x", padx=5, pady=5)
 
@@ -110,15 +116,14 @@ class Dashboard(ctk.CTk):
         self.filter_button = ctk.CTkButton(self.filter_frame, text="Filter", command=self.apply_filters)
         self.filter_button.grid(row=2, column=3, padx=5, pady=5, sticky="e")
 
-        # Allow some columns to stretch if needed
         self.filter_frame.columnconfigure(1, weight=1)
         self.filter_frame.columnconfigure(3, weight=1)
 
-        # Main content frame (below): two columns
+        # Contenu principal (2 colonnes)
         self.content_frame = ctk.CTkFrame(self.transactions_layout)
         self.content_frame.pack(side="top", fill="both", expand=True, padx=5, pady=5)
 
-        # Left column: transaction list
+        # Colonne gauche : historique
         self.transactions_list_frame = ctk.CTkFrame(self.content_frame)
         self.transactions_list_frame.pack(side="left", fill="both", expand=True, padx=5, pady=5)
 
@@ -132,7 +137,7 @@ class Dashboard(ctk.CTk):
         self.transactions_container = ctk.CTkFrame(self.transactions_list_frame)
         self.transactions_container.pack(fill="both", expand=True, padx=10, pady=10)
 
-        # Right column: "New Transaction"
+        # Colonne droite : "New Transaction"
         self.actions_frame = ctk.CTkFrame(self.content_frame)
         self.actions_frame.pack(side="right", fill="both", expand=False, padx=5, pady=5)
 
@@ -150,34 +155,43 @@ class Dashboard(ctk.CTk):
         self.debit_button = ctk.CTkButton(self.actions_frame, text="Debit", command=lambda: self.handle_amount("debit"))
         self.debit_button.pack(pady=5)
 
+        self.transfer_button = ctk.CTkButton(
+            self.actions_frame,
+            text="Transfer",
+            command=self.open_transfer_window
+        )
+        self.transfer_button.pack(pady=5)
+
     # -----------------------------------------------------------------------
     # "Settings" Tab
     # -----------------------------------------------------------------------
     def setup_settings_tab(self):
-        """Sets up the 'Settings' tab."""
         ctk.CTkLabel(self.settings_tab, text="Settings", font=("Arial", 16)).pack(pady=10)
         self.logout_button = ctk.CTkButton(self.settings_tab, text="Logout", command=self.logout)
         self.logout_button.pack(pady=5)
 
     # -----------------------------------------------------------------------
-    # General dashboard update
+    # Mise à jour générale du dashboard
     # -----------------------------------------------------------------------
     def update_dashboard(self):
-        """Updates the balance, transaction history, and overdraft alert."""
+        """Met à jour le solde, l'historique des transactions et l'alerte de découvert."""
         account = Account.get_account_by_user(self.user_id)
         if account:
             balance = float(account.balance)
             self.balance_label.configure(text=f"Balance: {balance:.2f}€")
-
-            # Check if balance is negative -> overdraft alert
             if balance < 0:
                 self.notification_label.configure(text="Attention : Vous êtes en découvert !")
             else:
                 self.notification_label.configure(text="")
+        else:
+            self.balance_label.configure(text="Balance: N/A")
 
-        transactions = Transaction.get_transactions(self.user_id)
+        if account:
+            transactions = Transaction.get_transactions(account.account_id)
+        else:
+            transactions = []
 
-        # Remove previous transaction display
+        # Nettoyage de l'affichage
         for widget in self.transactions_container.winfo_children():
             widget.destroy()
 
@@ -189,29 +203,31 @@ class Dashboard(ctk.CTk):
                 type_transaction = "Credit" if t["amount"] > 0 else "Debit"
                 description = t["description"]
                 amount = f"{float(t['amount']):.2f}€"
-
                 ctk.CTkLabel(
                     self.transactions_container,
                     text=f"{date_str} - {type_transaction} - {description}: {amount}",
                     font=("Arial", 14)
                 ).pack(anchor="w", padx=5, pady=2)
 
-        # Update the graph in the "Overview" tab
+        # Mise à jour du graphique
         self.plot_transactions()
 
     # -----------------------------------------------------------------------
-    # Graph display in the "Overview" tab
+    # Graphique dans l'onglet "Overview"
     # -----------------------------------------------------------------------
     def plot_transactions(self):
-        """Displays a graph of the account balance evolution over time."""
-        transactions = Transaction.get_transactions(self.user_id)
+        """Affiche un graphique de l'évolution du solde."""
+        account = Account.get_account_by_user(self.user_id)
+        if account:
+            transactions = Transaction.get_transactions(account.account_id)
+        else:
+            transactions = []
+
         if not transactions:
             print("No transactions to display.")
             return
 
-        # Sort transactions by date
         transactions.sort(key=lambda t: t["date"])
-
         current_balance = 0
         dates = []
         balances = []
@@ -221,7 +237,6 @@ class Dashboard(ctk.CTk):
             current_balance += float(t["amount"])
             balances.append(current_balance)
 
-        # Convert date objects to strings
         dates_str = [datetime.strftime(d, "%d/%m/%Y %H:%M") for d in dates]
 
         fig, ax = plt.subplots(figsize=(7, 4))
@@ -233,54 +248,53 @@ class Dashboard(ctk.CTk):
         ax.grid()
         plt.xticks(rotation=60)
 
-        # Destroy any previous canvas
         if hasattr(self, "canvas") and self.canvas:
             self.canvas.get_tk_widget().destroy()
 
-        # Display the graph in the "graph_frame"
         self.canvas = FigureCanvasTkAgg(fig, master=self.graph_frame)
         self.canvas.draw()
         self.canvas.get_tk_widget().pack(pady=10, fill="both", expand=True)
 
     # -----------------------------------------------------------------------
-    # Handling credit/debit amounts
+    # Gestion des crédits/débits
     # -----------------------------------------------------------------------
     def handle_amount(self, action):
-        """Enter the amount."""
         try:
             amount = Decimal(self.amount_entry.get())
             description = self.description_entry.get()
-
             if action == "credit":
                 self.credit(amount, description)
             elif action == "debit":
                 self.debit(amount, description)
             else:
                 print("Error: Unknown action.")
-        except ValueError:
-            print("Error: Please enter a valid number.")
+        except Exception as e:
+            print("Error: Please enter a valid number.", e)
 
     def credit(self, amount, description):
-        """Adds a credit."""
+        """Créditer le compte."""
         account = Account.get_account_by_user(self.user_id)
         if account:
-            account.update_balance(amount)
-            Transaction.create_transaction(self.user_id, description, amount)
+            account.credit(amount)
+            # Transaction déjà créée dans la méthode credit()
+            # ou, si besoin d'une description personnalisée :
+            # Transaction.create_transaction(account.account_id, description, amount)
             self.update_dashboard()
 
     def debit(self, amount, description):
-        """Adds a debit."""
+        """Débiter le compte."""
         account = Account.get_account_by_user(self.user_id)
         if account:
-            account.update_balance(-amount)
-            Transaction.create_transaction(self.user_id, description, -amount)
+            account.debit(amount)
+            # Transaction déjà créée dans la méthode debit()
+            # ou, si besoin d'une description personnalisée :
+            # Transaction.create_transaction(account.account_id, description, -amount)
             self.update_dashboard()
 
     # -----------------------------------------------------------------------
-    # Transaction filters
+    # Application des filtres
     # -----------------------------------------------------------------------
     def apply_filters(self):
-        """Applies the selected filters and updates the transaction display."""
         type_filter = self.type_filter.get()
         description_filter = self.description_filter.get().strip()
         start_date = self.start_date_entry.get().strip()
@@ -289,17 +303,19 @@ class Dashboard(ctk.CTk):
 
         sort_order = "ASC" if amount_sort == "Ascending" else "DESC" if amount_sort == "Descending" else None
 
-        # Retrieve filtered transactions
-        transactions = Transaction.get_transactions(
-            user_id=self.user_id,
-            type_filter=type_filter,
-            description_filter=description_filter,
-            start_date=start_date,
-            end_date=end_date,
-            sort_order=sort_order
-        )
+        account = Account.get_account_by_user(self.user_id)
+        if account:
+            transactions = Transaction.get_transactions(
+                account.account_id,
+                type_filter=type_filter,
+                description_filter=description_filter,
+                start_date=start_date,
+                end_date=end_date,
+                sort_order=sort_order
+            )
+        else:
+            transactions = []
 
-        # Clear previous display
         for widget in self.transactions_container.winfo_children():
             widget.destroy()
 
@@ -311,19 +327,41 @@ class Dashboard(ctk.CTk):
                 type_transaction = "Credit" if t["amount"] > 0 else "Debit"
                 description = t["description"]
                 amount = f"{float(t['amount']):.2f}€"
-
                 ctk.CTkLabel(
                     self.transactions_container,
                     text=f"{date_str} - {type_transaction} - {description}: {amount}",
                     font=("Arial", 14)
                 ).pack(anchor="w", padx=5, pady=2)
 
+    def open_transfer_window(self):
+        TransferWindow(self.user_id, self)
+
     # -----------------------------------------------------------------------
-    # Logout (return to login screen)
+    # Déconnexion
     # -----------------------------------------------------------------------
     def logout(self):
-        """logout and go back to login screen."""
         from views.app import BudgetBuddyApp
         self.destroy()
         app = BudgetBuddyApp()
         app.mainloop()
+    
+    def update_balance(self):
+        """Met à jour le solde affiché après un transfert."""
+        connection = mysql.connector.connect(
+            host=os.getenv("DB_HOST"),
+            user=os.getenv("DB_USER"),
+            password=os.getenv("DB_PASSWORD"),
+            database=os.getenv("DB_NAME")
+        )
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute("SELECT balance FROM accounts WHERE user_id = %s", (self.user_id,))
+        account = cursor.fetchone()
+
+        if account:
+            new_balance = account["balance"]
+            self.balance_label.configure(text=f"Balance : {new_balance}€")
+            self.update_idletasks()
+            messagebox.showinfo("DEBUG", f"New balance : {new_balance}€")
+        
+        cursor.close()
+        connection.close()

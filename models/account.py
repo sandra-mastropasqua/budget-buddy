@@ -1,7 +1,9 @@
+# models/account.py
 import mysql.connector
 import os
 from dotenv import load_dotenv
 from models.transaction import Transaction
+from tkinter import messagebox
 
 load_dotenv()
 
@@ -31,7 +33,8 @@ class Account:
             cursor = connection.cursor()
 
             account_number = f"BB{user_id:06d}"  # Generates a unique account number
-            cursor.execute("INSERT INTO accounts (user_id, account_number, balance) VALUES (%s, %s, %s)", (user_id, account_number, 0.00))
+            cursor.execute("INSERT INTO accounts (user_id, account_number, balance) VALUES (%s, %s, %s)",
+                           (user_id, account_number, 0.00))
             connection.commit()
 
             return cursor.lastrowid  # Returns the created account ID
@@ -68,12 +71,11 @@ class Account:
                     balance=result["balance"]
                 )
 
-            # Ensure all results are read before closing
-            cursor.fetchall()  # Clear any remaining results
+            # Clear any remaining results
+            cursor.fetchall()
 
         except mysql.connector.Error as err:
             print(f"MySQL Error: {err}")
-
         finally:
             if connection and connection.is_connected():
                 cursor.close()
@@ -135,9 +137,9 @@ class Account:
                 cursor.close()
                 connection.close()
 
-    def update_balance(self, amount):
-        """Met à jour le solde du compte dans la base de données."""
-        connection = None
+    @staticmethod
+    def transfer_funds(from_account_id, to_account_number, amount):
+        """Transfers money from one account to another"""
         try:
             connection = mysql.connector.connect(
                 host=DB_HOST,
@@ -145,20 +147,56 @@ class Account:
                 password=DB_PASSWORD,
                 database=DB_NAME
             )
-            cursor = connection.cursor()
+            cursor = connection.cursor(dictionary=True)
 
-            print(f"DEBUG: Mise à jour du solde en DB - Ajout de {amount}€")
+            # Vérifier le solde du compte source
+            cursor.execute("SELECT balance FROM accounts WHERE id = %s", (from_account_id,))
+            from_account = cursor.fetchone()
+
+            if not from_account or from_account["balance"] < amount:
+                messagebox.showerror("Error", "Funds are not enough")
+                return False
+
+            # Récupérer l'ID du compte destinataire via l'email (vous utilisez to_account_number = email)
             cursor.execute("""
-                UPDATE accounts SET balance = balance + %s WHERE id = %s;
-            """, (amount, self.account_id))
+                SELECT accounts.id FROM accounts
+                JOIN users ON accounts.user_id = users.id
+                WHERE users.email = %s
+            """, (to_account_number,))
+            to_account = cursor.fetchone()
+
+            if not to_account:
+                messagebox.showerror("Error", "Destination account not found")
+                return False
+
+            to_account_id = int(to_account["id"])
+
+            cursor.execute("SELECT balance FROM accounts WHERE id = %s", (to_account_id,))
+            to_account_balance = cursor.fetchone()
+
+            if not to_account_balance:
+                messagebox.showerror("Error", "Impossible to get the sold of the account")
+                return False
+
+            new_balance_from = float(from_account["balance"]) - amount
+            new_balance_to = float(to_account_balance["balance"]) + amount
+            
+            cursor.execute("START TRANSACTION;")
+            cursor.execute("UPDATE accounts SET balance = %s WHERE id = %s", (new_balance_from, from_account_id))
+            cursor.execute("UPDATE accounts SET balance = %s WHERE id = %s", (new_balance_to, to_account_id))
+
+            # Créer les transactions (ID de compte source et ID de compte destination)
+            Transaction.create_transaction(from_account_id, f"Transfer to {to_account_number}", -amount)
+            Transaction.create_transaction(to_account_id, f"Transfer received from {from_account_id}", amount)
 
             connection.commit()
-            self.balance += amount
-
+            return True
         except mysql.connector.Error as err:
-            print(f"Error MySQL : {err}")
+            messagebox.showerror("Error MySQL", f"Problem SQL : {err}")
+            if connection:
+                connection.rollback()
+            return False
         finally:
             if connection and connection.is_connected():
                 cursor.close()
                 connection.close()
-

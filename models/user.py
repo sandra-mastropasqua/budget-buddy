@@ -1,9 +1,11 @@
+# models/user.py
 import mysql.connector
 import bcrypt
 import random
 from datetime import datetime
 from dotenv import load_dotenv
 import os
+
 load_dotenv()
 
 DB_HOST = os.getenv("DB_HOST")
@@ -45,10 +47,9 @@ class User:
         connection.close()
         return user
 
-
     @staticmethod
     def create_database_and_tables():
-        """Creates database and tables if they don't exist."""
+        """Creates database and tables if they don't exist, with corrected 'transactions' structure."""
         connection = None
         try:
             connection = mysql.connector.connect(
@@ -61,6 +62,7 @@ class User:
             cursor.execute("CREATE DATABASE IF NOT EXISTS budget_buddy")
             cursor.execute("USE budget_buddy")
 
+            # Table "users"
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -71,6 +73,7 @@ class User:
             );
             """)
 
+            # Table "accounts"
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS accounts (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -81,14 +84,15 @@ class User:
             );
             """)
 
+            # Table "transactions" (corrigée pour utiliser "account_id")
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS transactions (
                 id INT AUTO_INCREMENT PRIMARY KEY,
-                user_id INT NOT NULL,
+                account_id INT NOT NULL,
                 description VARCHAR(255) NOT NULL,
                 amount DECIMAL(10, 2) NOT NULL,
                 date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
             );
             """)
 
